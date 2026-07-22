@@ -49,12 +49,13 @@ Setup (registers the MCP server using the current YELLOW_PRO_* env):
   yellow-pro setup hermes         via \`hermes mcp add\` (falls back to config.yaml snippet)
   yellow-pro setup json           print generic MCP client JSON snippet
 
-Env: YELLOW_PRO_BASE_URL (default https://trade.api.yellow.pro), YELLOW_PRO_API_KEY,
+Env: YELLOW_PRO_BASE_URL (explicit URL override), YELLOW_PRO_SANDBOX (true -> staging URL), YELLOW_PRO_API_KEY,
      YELLOW_PRO_API_SECRET, YELLOW_PRO_APP_SESSION_ID, YELLOW_PRO_ENABLE_TRADING,
      YELLOW_PRO_MODULES, YELLOW_PRO_RATE_LIMIT_MS`;
 
 const ENV_KEYS = [
   "YELLOW_PRO_BASE_URL",
+  "YELLOW_PRO_SANDBOX",
   "YELLOW_PRO_API_KEY",
   "YELLOW_PRO_API_SECRET",
   "YELLOW_PRO_APP_SESSION_ID",

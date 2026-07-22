@@ -12,24 +12,27 @@ and an agent skill file for non-MCP agents.
 
 ## One-liner install (for agents and humans)
 
-Install + register with Claude Code in a single command:
+Install from GitHub and register with Claude Code:
 
 ```bash
-npm i -g git+https://github.com/layer-3/yellow-pro-mcp.git && \
+curl -fsSL https://raw.githubusercontent.com/layer-3/yellow-pro-mcp/main/install.sh | bash && \
   YELLOW_PRO_API_KEY=... YELLOW_PRO_API_SECRET=... YELLOW_PRO_APP_SESSION_ID=... \
   yellow-pro setup claude-code
 ```
 
-Or zero-install — point any MCP client at `npx` directly:
+The installer checks Node.js >= 18, builds in a temporary directory, installs a
+packed tarball globally, and removes the temporary files. Inspect `install.sh`
+before running it if your environment does not permit `curl | bash`.
+
+Then register any MCP client with the installed server, for example Claude Code:
 
 ```bash
 claude mcp add yellow_pro -s user \
   -e YELLOW_PRO_API_KEY=... -e YELLOW_PRO_API_SECRET=... -e YELLOW_PRO_APP_SESSION_ID=... \
-  -- npx -y --package git+https://github.com/layer-3/yellow-pro-mcp.git yellow-pro-mcp
+  -- yellow-pro-mcp
 ```
 
-The repo is public, so the `git+https` form works without any GitHub credentials
-(`git+ssh` also works if you prefer SSH keys).
+The repo is public, so installation does not require GitHub credentials.
 
 Multi-client setup — each registers the MCP server using your current
 `YELLOW_PRO_*` environment:
@@ -68,7 +71,8 @@ into your agent's skills directory (e.g. `~/.claude/skills/yellow-pro/`).
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `YELLOW_PRO_BASE_URL` | no | `https://trade.api.yellow.pro` | REST base URL |
+| `YELLOW_PRO_BASE_URL` | no | selected by `YELLOW_PRO_SANDBOX` | Explicit REST base URL override |
+| `YELLOW_PRO_SANDBOX` | no | `false` | Exactly `true` uses staging (`https://api.uat.yellow.pro.neodax.app`); otherwise production (`https://trade.api.yellow.pro`) |
 | `YELLOW_PRO_API_KEY` | private tools | — | API key |
 | `YELLOW_PRO_API_SECRET` | private tools | — | API secret (HMAC-SHA256) |
 | `YELLOW_PRO_APP_SESSION_ID` | private tools | — | app session id (`uid` credential) |
@@ -78,6 +82,7 @@ into your agent's skills directory (e.g. `~/.claude/skills/yellow-pro/`).
 
 Trading tools are **not registered** unless `YELLOW_PRO_ENABLE_TRADING=true`.
 Market data tools work without credentials.
+An explicit `YELLOW_PRO_BASE_URL` takes precedence over sandbox mode.
 
 ## Tools
 

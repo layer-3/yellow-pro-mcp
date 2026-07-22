@@ -14,7 +14,8 @@ Environment variables (already set if the MCP server is configured):
 
 - `YELLOW_PRO_API_KEY`, `YELLOW_PRO_API_SECRET`, `YELLOW_PRO_APP_SESSION_ID` — for account/trading commands
 - `YELLOW_PRO_ENABLE_TRADING=true` — required for place/cancel/leverage/transfer commands
-- `YELLOW_PRO_BASE_URL` — optional, defaults to `https://trade.api.yellow.pro`
+- `YELLOW_PRO_BASE_URL` — optional explicit URL override
+- `YELLOW_PRO_SANDBOX=true` — use staging (`https://api.uat.yellow.pro.neodax.app`); otherwise production (`https://trade.api.yellow.pro`)
 
 ## Workflow
 

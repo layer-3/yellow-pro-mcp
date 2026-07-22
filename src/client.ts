@@ -11,6 +11,7 @@
 import { createHmac } from "node:crypto";
 
 export const DEFAULT_BASE_URL = "https://trade.api.yellow.pro";
+export const SANDBOX_BASE_URL = "https://api.uat.yellow.pro.neodax.app";
 
 export type Params = Record<string, unknown>;
 
@@ -50,8 +51,9 @@ export interface ClientOptions {
 
 export function clientFromEnv(env: NodeJS.ProcessEnv = process.env): YellowProClient {
   const gap = Number(env.YELLOW_PRO_RATE_LIMIT_MS);
+  const sandbox = (env.YELLOW_PRO_SANDBOX ?? "").toLowerCase() === "true";
   return new YellowProClient({
-    baseUrl: env.YELLOW_PRO_BASE_URL,
+    baseUrl: env.YELLOW_PRO_BASE_URL ?? (sandbox ? SANDBOX_BASE_URL : undefined),
     apiKey: env.YELLOW_PRO_API_KEY,
     apiSecret: env.YELLOW_PRO_API_SECRET,
     appSessionId: env.YELLOW_PRO_APP_SESSION_ID,

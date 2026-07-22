@@ -2,6 +2,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { api } from "../src/api.js";
+import { clientFromEnv } from "../src/client.js";
 import type { Params, YellowProClient } from "../src/client.js";
 import { configFromEnv } from "../src/server.js";
 
@@ -68,4 +69,32 @@ test("trading gate only accepts literal true", () => {
   assert.equal(configFromEnv({ YELLOW_PRO_ENABLE_TRADING: "yes" } as NodeJS.ProcessEnv).enableTrading, false);
   assert.equal(configFromEnv({ YELLOW_PRO_ENABLE_TRADING: "1" } as NodeJS.ProcessEnv).enableTrading, false);
   assert.equal(configFromEnv({ YELLOW_PRO_ENABLE_TRADING: "TRUE" } as NodeJS.ProcessEnv).enableTrading, true);
+});
+
+test("sandbox mode selects staging URL unless base URL is explicit", async () => {
+  const originalFetch = globalThis.fetch;
+  const urls: string[] = [];
+  globalThis.fetch = async (input) => {
+    urls.push(String(input));
+    return new Response("{}", { status: 200, headers: { "Content-Type": "application/json" } });
+  };
+
+  try {
+    await clientFromEnv({
+      YELLOW_PRO_SANDBOX: "true",
+      YELLOW_PRO_RATE_LIMIT_MS: "0",
+    }).public("GET", "health");
+    await clientFromEnv({
+      YELLOW_PRO_SANDBOX: "true",
+      YELLOW_PRO_BASE_URL: "https://override.example",
+      YELLOW_PRO_RATE_LIMIT_MS: "0",
+    }).public("GET", "health");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+
+  assert.deepEqual(urls, [
+    "https://api.uat.yellow.pro.neodax.app/health",
+    "https://override.example/health",
+  ]);
 });

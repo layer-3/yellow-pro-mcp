@@ -12,7 +12,7 @@
   ],
   "scripts": {
     "build": "tsc",
-    "prepare": "tsc",
+    "prepublishOnly": "npm test && npm run build",
     "test": "tsx --test test/sign.test.ts test/server.test.ts test/api.test.ts"
   },
   "engines": {
