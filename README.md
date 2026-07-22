@@ -15,7 +15,8 @@ and an agent skill file for non-MCP agents.
 Install from GitHub and register with Claude Code:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/layer-3/yellow-pro-mcp/main/install.sh | bash && \
+curl -fsSL -H 'Accept: application/vnd.github.raw+json' \
+  'https://api.github.com/repos/layer-3/yellow-pro-mcp/contents/install.sh?ref=main' | bash && \
   YELLOW_PRO_API_KEY=... YELLOW_PRO_API_SECRET=... YELLOW_PRO_APP_SESSION_ID=... \
   yellow-pro setup claude-code
 ```
