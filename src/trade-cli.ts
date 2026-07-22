@@ -10,8 +10,9 @@ import { dirname, join } from "node:path";
 import { parseArgs } from "node:util";
 import { api, MarketType, OrderInput } from "./api.js";
 import { clientFromEnv, YellowProError } from "./client.js";
+import { VERSION } from "./version.js";
 
-const USAGE = `yellow-pro — yellow_pro exchange CLI
+const USAGE = `yellow-pro ${VERSION} — yellow_pro exchange CLI
 
 Market data (no credentials needed):
   yellow-pro health
@@ -179,9 +180,13 @@ async function run(): Promise<unknown> {
       direction: { type: "string" },
       "order-type": { type: "string" },
       help: { type: "boolean", short: "h" },
+      version: { type: "boolean", short: "v" },
     },
   });
   const [command, ...args] = positionals;
+  if (values.version) {
+    return VERSION;
+  }
   if (values.help || command === undefined || command === "help") {
     return USAGE;
   }
