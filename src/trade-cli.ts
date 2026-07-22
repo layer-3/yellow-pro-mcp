@@ -4,6 +4,9 @@
  * Prints raw exchange JSON to stdout; exits non-zero on error.
  */
 import { spawnSync } from "node:child_process";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { dirname, join } from "node:path";
 import { parseArgs } from "node:util";
 import { api, MarketType, OrderInput } from "./api.js";
 import { clientFromEnv, YellowProError } from "./client.js";
@@ -39,9 +42,11 @@ Trading (needs YELLOW_PRO_ENABLE_TRADING=true):
   yellow-pro set-position-mode <market> <hedge|one_way>
   yellow-pro transfer <asset> <amount> <spot|perps> <spot|perps>
 
-Setup:
-  yellow-pro setup claude-code    register the MCP server with Claude Code (uses current env)
-  yellow-pro setup codex          print Codex CLI (config.toml) snippet
+Setup (registers the MCP server using the current YELLOW_PRO_* env):
+  yellow-pro setup claude-code    via \`claude mcp add\` (user scope)
+  yellow-pro setup codex          via \`codex mcp add\` (falls back to config.toml snippet)
+  yellow-pro setup openclaw       writes ~/.openclaw/openclaw.json mcpServers entry
+  yellow-pro setup hermes         via \`hermes mcp add\` (falls back to config.yaml snippet)
   yellow-pro setup json           print generic MCP client JSON snippet
 
 Env: YELLOW_PRO_BASE_URL (default https://trade.api.yellow.pro), YELLOW_PRO_API_KEY,
@@ -96,27 +101,62 @@ function num(value: string | undefined): number | undefined {
   return parsed;
 }
 
+function runSetupCommand(bin: string, args: string[], input?: string): void {
+  const stdio: ("pipe" | "inherit")[] = input === undefined ? ["inherit", "inherit", "inherit"] : ["pipe", "inherit", "inherit"];
+  const result = spawnSync(bin, args, { stdio, input });
+  if (result.error || result.status !== 0) {
+    throw new YellowProError(`\`${bin} ${args.slice(0, 2).join(" ")}\` failed — is the ${bin} CLI installed?`);
+  }
+}
+
 function setup(target: string | undefined): string {
   const command = "yellow-pro-mcp";
   const envPresent = ENV_KEYS.filter((key) => process.env[key]);
-  if (target === "claude-code") {
-    const envFlags = envPresent.flatMap((key) => ["-e", `${key}=${process.env[key]}`]);
-    const args = ["mcp", "add", "yellow_pro", "-s", "user", ...envFlags, "--", command];
-    const result = spawnSync("claude", args, { stdio: "inherit" });
-    if (result.error || result.status !== 0) {
-      throw new YellowProError("`claude mcp add` failed — is the Claude Code CLI installed?");
+  const env = Object.fromEntries(envPresent.map((key) => [key, process.env[key] as string]));
+  switch (target) {
+    case "claude":
+    case "claude-code": {
+      const envFlags = envPresent.flatMap((key) => ["-e", `${key}=${process.env[key]}`]);
+      runSetupCommand("claude", ["mcp", "add", "yellow_pro", "-s", "user", ...envFlags, "--", command]);
+      return "yellow_pro MCP server registered with Claude Code (user scope)";
     }
-    return "yellow_pro MCP server registered with Claude Code (user scope)";
+    case "codex": {
+      const envFlags = envPresent.flatMap((key) => ["--env", `${key}=${process.env[key]}`]);
+      try {
+        runSetupCommand("codex", ["mcp", "add", "yellow_pro", ...envFlags, "--", command]);
+        return "yellow_pro MCP server registered with Codex CLI";
+      } catch {
+        const envToml = envPresent.map((key) => `${key} = "${process.env[key]}"`).join(", ");
+        return `# \`codex mcp add\` unavailable — add to ~/.codex/config.toml:\n[mcp_servers.yellow_pro]\ncommand = "${command}"\nenv = { ${envToml} }`;
+      }
+    }
+    case "openclaw": {
+      const file = join(homedir(), ".openclaw", "openclaw.json");
+      let config: Record<string, unknown> = {};
+      if (existsSync(file)) {
+        config = JSON.parse(readFileSync(file, "utf8")) as Record<string, unknown>;
+      }
+      const servers = (config.mcpServers ?? {}) as Record<string, unknown>;
+      config.mcpServers = { ...servers, yellow_pro: { command, env } };
+      mkdirSync(dirname(file), { recursive: true });
+      writeFileSync(file, JSON.stringify(config, null, 2) + "\n");
+      return `yellow_pro MCP server written to ${file} — restart the OpenClaw gateway to pick it up`;
+    }
+    case "hermes": {
+      try {
+        // hermes prompts "Save config anyway?" when it cannot connect yet — answer yes
+        runSetupCommand("hermes", ["mcp", "add", "yellow_pro", "--command", command], "y\n");
+        return "yellow_pro MCP server registered with Hermes (ensure YELLOW_PRO_* env vars are set in the shell running hermes)";
+      } catch {
+        const envYaml = envPresent.map((key) => `      ${key}: "${process.env[key]}"`).join("\n");
+        return `# hermes CLI unavailable — add to your Hermes config.yaml:\nmcp_servers:\n  yellow_pro:\n    command: ${command}\n    env:\n${envYaml}`;
+      }
+    }
+    case "json":
+      return JSON.stringify({ mcpServers: { yellow_pro: { command, env } } }, null, 2);
+    default:
+      throw new YellowProError("setup target must be one of: claude-code, codex, openclaw, hermes, json");
   }
-  const env = Object.fromEntries(envPresent.map((key) => [key, process.env[key]]));
-  if (target === "codex") {
-    const envToml = envPresent.map((key) => `${key} = "${process.env[key]}"`).join(", ");
-    return `# add to ~/.codex/config.toml\n[mcp_servers.yellow_pro]\ncommand = "${command}"\nenv = { ${envToml} }`;
-  }
-  if (target === "json") {
-    return JSON.stringify({ mcpServers: { yellow_pro: { command, env } } }, null, 2);
-  }
-  throw new YellowProError("setup target must be one of: claude-code, codex, json");
 }
 
 async function run(): Promise<unknown> {

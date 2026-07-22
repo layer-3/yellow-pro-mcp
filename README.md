@@ -28,19 +28,35 @@ claude mcp add yellow_pro -s user \
   -- npx -y --package git+https://github.com/layer-3/yellow-pro-mcp.git yellow-pro-mcp
 ```
 
-(For a private repo, use the `git+ssh://git@github.com/...` form with your SSH key instead.)
+The repo is public, so the `git+https` form works without any GitHub credentials
+(`git+ssh` also works if you prefer SSH keys).
+
+Multi-client setup — each registers the MCP server using your current
+`YELLOW_PRO_*` environment:
+
+```bash
+yellow-pro setup claude-code   # via `claude mcp add` (user scope)
+yellow-pro setup codex         # via `codex mcp add`, falls back to config.toml snippet
+yellow-pro setup openclaw      # writes ~/.openclaw/openclaw.json mcpServers entry
+yellow-pro setup hermes        # via `hermes mcp add`, falls back to config.yaml snippet
+yellow-pro setup json          # prints generic MCP JSON for any other client
+```
 
 `npm i -g` (or a local checkout: `npm i -g /path/to/yellow_pro_mcp`) gives you two
 commands: `yellow-pro-mcp` (MCP server) and `yellow-pro` (CLI).
 
-### Codex CLI / generic MCP clients
-
-`yellow-pro setup codex` / `yellow-pro setup json` print ready-to-paste config:
+### Manual config (any MCP client)
 
 ```toml
+# Codex CLI (~/.codex/config.toml)
 [mcp_servers.yellow_pro]
 command = "yellow-pro-mcp"
 env = { YELLOW_PRO_API_KEY = "...", YELLOW_PRO_API_SECRET = "...", YELLOW_PRO_APP_SESSION_ID = "..." }
+```
+
+```json
+// OpenClaw (~/.openclaw/openclaw.json), Claude Desktop, Cursor, ...
+{ "mcpServers": { "yellow_pro": { "command": "yellow-pro-mcp", "env": { "YELLOW_PRO_API_KEY": "..." } } } }
 ```
 
 ### Agent skill (non-MCP agents)
