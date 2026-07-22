@@ -21,8 +21,9 @@ curl -fsSL https://raw.githubusercontent.com/layer-3/yellow-pro-mcp/main/install
 ```
 
 The installer checks Node.js >= 18, builds in a temporary directory, installs a
-packed tarball globally, and removes the temporary files. Inspect `install.sh`
-before running it if your environment does not permit `curl | bash`.
+packed tarball globally, and removes the temporary files. If the system npm
+prefix is not writable, it installs under `~/.local` instead. Inspect
+`install.sh` before running it if your environment does not permit `curl | bash`.
 
 Then register any MCP client with the installed server, for example Claude Code:
 

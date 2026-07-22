@@ -34,7 +34,17 @@ printf 'Building yellow-pro-mcp...\n'
 printf 'Packing yellow-pro-mcp...\n'
 tarball="$(cd "$TEMP_DIR/repo" && npm pack --silent --pack-destination "$TEMP_DIR")"
 
-printf 'Installing yellow-pro-mcp globally...\n'
-npm install --global --no-audit --no-fund "$TEMP_DIR/$tarball"
+install_prefix="${YELLOW_PRO_MCP_PREFIX:-$(npm config get prefix)}"
+if [[ -e "$install_prefix" && ! -w "$install_prefix" ]]; then
+  install_prefix="$HOME/.local"
+fi
 
-printf 'Installed yellow-pro-mcp. Run: yellow-pro --help\n'
+printf 'Installing yellow-pro-mcp to %s...\n' "$install_prefix"
+mkdir -p "$install_prefix"
+npm install --global --prefix "$install_prefix" --no-audit --no-fund "$TEMP_DIR/$tarball"
+
+printf 'Installed yellow-pro-mcp. Binary directory: %s/bin\n' "$install_prefix"
+if [[ ":$PATH:" != *":$install_prefix/bin:"* ]]; then
+  printf 'Add it to PATH: export PATH="%s/bin:$PATH"\n' "$install_prefix"
+fi
+printf 'Run: yellow-pro --help\n'
