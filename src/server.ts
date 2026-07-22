@@ -12,6 +12,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import { api, MarketType, OrderInput } from "./api.js";
 import { clientFromEnv, YellowProClient } from "./client.js";
+import { VERSION } from "./version.js";
 
 export type Module = "market" | "account" | "trading";
 export const ALL_MODULES: Module[] = ["market", "account", "trading"];
@@ -58,7 +59,7 @@ function jsonResult(data: unknown) {
 export function createServer(config: ServerConfig): McpServer {
   const { client, enableTrading, modules } = config;
   const server = new McpServer(
-    { name: "yellow_pro", version: "0.1.0" },
+    { name: "yellow_pro", version: VERSION },
     {
       instructions:
         "yellow_pro exchange. Markets use native ids: spot like 'ETHUSDT', perpetual like " +
