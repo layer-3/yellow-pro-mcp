@@ -15,22 +15,22 @@ Environment variables (already set if the MCP server is configured):
 - `YELLOW_PRO_API_KEY`, `YELLOW_PRO_API_SECRET`, `YELLOW_PRO_APP_SESSION_ID` — for account/trading commands
 - `YELLOW_PRO_ENABLE_TRADING=true` — required for place/cancel/leverage/transfer commands
 - `YELLOW_PRO_BASE_URL` — optional explicit URL override
-- `YELLOW_PRO_SANDBOX=true` — use staging (`https://api.uat.yellow.pro.neodax.app`); otherwise production (`https://trade.api.yellow.pro`)
+- `YELLOW_PRO_SANDBOX=true` — use staging (`https://api.staging.yellow.pro.neodax.app`); otherwise production (`https://trade.api.yellow.pro`)
 
 ## Workflow
 
-1. Discover markets first: `yellow-pro markets` — native ids look like `BTCYTEST.USD` (spot) and
-   `BTCYTEST.USD-PERP` (perpetual). Check precision/filters before quoting amounts.
+1. Discover markets first: `yellow-pro markets` — native ids look like `ETHUSDT` (spot) and
+   `BTCUSDT-PERP` (perpetual). Check precision/filters before quoting amounts.
 2. Market data: `yellow-pro ticker <market>`, `yellow-pro orderbook <market> --limit 10`,
    `yellow-pro klines <market> --interval 1h --limit 100`, `yellow-pro funding [market]`
 3. Account: `yellow-pro balance spot` or `yellow-pro balance perp`,
    `yellow-pro open-orders perp`, `yellow-pro positions`,
    `yellow-pro trades perp --market <market>`
 4. Trading (amounts/prices are decimal strings):
-   - `yellow-pro place perp BTCYTEST.USD-PERP buy limit 0.1 70000 --leverage 5`
-   - `yellow-pro place spot BTCYTEST.USD sell market 0.05`
-   - `yellow-pro cancel perp BTCYTEST.USD-PERP <order_uuid>`
-   - `yellow-pro set-leverage BTCYTEST.USD-PERP 10`
+   - `yellow-pro place perp BTCUSDT-PERP buy limit 0.001 65000 --leverage 5`
+   - `yellow-pro place spot ETHUSDT sell market 0.01`
+   - `yellow-pro cancel perp BTCUSDT-PERP <order_uuid>`
+   - `yellow-pro set-leverage BTCUSDT-PERP 10`
 5. Run `yellow-pro --help` for the full command list.
 
 ## Safety

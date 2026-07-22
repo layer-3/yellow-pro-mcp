@@ -1,5 +1,7 @@
 # yellow-pro-mcp
 
+English | [简体中文](README.zh-CN.md)
+
 MCP server + CLI exposing the **yellow_pro** exchange to AI agents — Claude Code,
 Codex CLI, OpenClaw, Cursor, or any MCP client. Market data, account state, and
 (when explicitly enabled) trading.
@@ -74,7 +76,7 @@ into your agent's skills directory (e.g. `~/.claude/skills/yellow-pro/`).
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `YELLOW_PRO_BASE_URL` | no | selected by `YELLOW_PRO_SANDBOX` | Explicit REST base URL override |
-| `YELLOW_PRO_SANDBOX` | no | `false` | Exactly `true` uses staging (`https://api.uat.yellow.pro.neodax.app`); otherwise production (`https://trade.api.yellow.pro`) |
+| `YELLOW_PRO_SANDBOX` | no | `false` | Exactly `true` uses staging (`https://api.staging.yellow.pro.neodax.app`); otherwise production (`https://trade.api.yellow.pro`) |
 | `YELLOW_PRO_API_KEY` | private tools | — | API key |
 | `YELLOW_PRO_API_SECRET` | private tools | — | API secret (HMAC-SHA256) |
 | `YELLOW_PRO_APP_SESSION_ID` | private tools | — | app session id (`uid` credential) |
@@ -96,7 +98,7 @@ An explicit `YELLOW_PRO_BASE_URL` takes precedence over sandbox mode.
 - **trading** (opt-in): `place_order`, `cancel_order`, `cancel_orders` (batch), `set_leverage`,
   `set_position_mode`, `transfer`
 
-Markets use native ids: spot `BTCYTEST.USD`, perpetual `BTCYTEST.USD-PERP`.
+Markets use native ids: spot `ETHUSDT`, perpetual `BTCUSDT-PERP`.
 Amounts and prices are decimal strings. All results are raw exchange JSON.
 
 The `yellow-pro` CLI mirrors the same surface — `yellow-pro --help`.

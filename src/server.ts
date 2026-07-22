@@ -34,12 +34,12 @@ export function configFromEnv(env: NodeJS.ProcessEnv = process.env): ServerConfi
 }
 
 const marketType = z.enum(["spot", "perp"]);
-const marketId = z.string().describe("market id, e.g. 'BTCYTEST.USD' (spot) or 'BTCYTEST.USD-PERP' (perp)");
+const marketId = z.string().describe("market id, e.g. 'ETHUSDT' (spot) or 'BTCUSDT-PERP' (perp)");
 const page = z.number().int().optional().describe("page number, 1-based");
 const pageSize = z.number().int().optional().describe("results per page (default 100)");
 
 const orderItem = {
-  market: marketId.describe("market id, e.g. 'BTCYTEST.USD' or 'BTCYTEST.USD-PERP'"),
+  market: marketId.describe("market id, e.g. 'ETHUSDT' or 'BTCUSDT-PERP'"),
   side: z.enum(["buy", "sell"]),
   order_type: z.enum(["limit", "market"]),
   amount: z.string().describe("base amount as a decimal string"),
@@ -61,8 +61,8 @@ export function createServer(config: ServerConfig): McpServer {
     { name: "yellow_pro", version: "0.1.0" },
     {
       instructions:
-        "yellow_pro exchange. Markets use native ids: spot like 'BTCYTEST.USD', perpetual like " +
-        "'BTCYTEST.USD-PERP'. Call get_markets first to discover them. Amounts and prices are " +
+        "yellow_pro exchange. Markets use native ids: spot like 'ETHUSDT', perpetual like " +
+        "'BTCUSDT-PERP'. Call get_markets first to discover them. Amounts and prices are " +
         "decimal strings. Market data tools need no credentials; account/trading tools do.",
     },
   );
