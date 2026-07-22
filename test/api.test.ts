@@ -95,7 +95,7 @@ test("sandbox mode selects staging URL unless base URL is explicit", async () =>
   }
 
   assert.deepEqual(urls, [
-    "https://api.uat.yellow.pro.neodax.app/health",
+    "https://api.staging.yellow.pro.neodax.app/health",
     "https://override.example/health",
   ]);
 });

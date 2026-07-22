@@ -11,7 +11,7 @@
 import { createHmac } from "node:crypto";
 
 export const DEFAULT_BASE_URL = "https://trade.api.yellow.pro";
-export const SANDBOX_BASE_URL = "https://api.uat.yellow.pro.neodax.app";
+export const SANDBOX_BASE_URL = "https://api.staging.yellow.pro.neodax.app";
 
 export type Params = Record<string, unknown>;
 
