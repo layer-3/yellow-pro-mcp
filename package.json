@@ -1,0 +1,30 @@
+{
+  "name": "yellow-pro-mcp",
+  "version": "0.1.0",
+  "description": "MCP server + CLI exposing the yellow_pro exchange (market data + trading) to AI agents",
+  "type": "module",
+  "bin": {
+    "yellow-pro-mcp": "dist/cli.js",
+    "yellow-pro": "dist/trade-cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepare": "tsc",
+    "test": "tsx --test test/sign.test.ts test/server.test.ts test/api.test.ts"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.0"
+  }
+}
