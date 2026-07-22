@@ -99,6 +99,48 @@ Agent skill 目录，例如 `~/.claude/skills/yellow-pro/`。
 
 `yellow-pro` CLI 提供同样的功能——`yellow-pro --help`。
 
+## 故障排查
+
+**MCP 客户端看不到工具 / 连接失败**
+
+- 通过 CLI 注册（`yellow-pro setup claude-code`，或直接用 `claude mcp add`），
+  不要手动编辑配置文件——Claude Code 读取的是 `~/.claude.json`，
+  不是 `~/.claude/settings.json`。
+- 客户端启动 server 时不会加载你的 shell profile，因此 `yellow-pro-mcp` 必须在
+  客户端的 `PATH` 里。用 `which yellow-pro-mcp` 检查；如果安装程序提示了 PATH，
+  把该目录加入 profile 并重启客户端。
+- 修改 MCP 配置后需要重启客户端——server 在会话启动时连接。
+- 验证 server 本身能启动：
+
+```bash
+echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}' | yellow-pro-mcp
+```
+
+**认证错误（`invalid_api_key`、`invalid_timestamp`）**
+
+- 私有工具需要 `YELLOW_PRO_API_KEY`、`YELLOW_PRO_API_SECRET`、
+  `YELLOW_PRO_APP_SESSION_ID` 三者齐全，且必须与你访问的环境匹配
+  （`YELLOW_PRO_SANDBOX=true` 的 key 不能用于生产环境，反之亦然）。
+- `invalid_timestamp` 表示本机时钟与交易所相差超过几秒——请同步系统时间
+  （macOS 用 `sudo sntp -sS time.apple.com`，Linux 用 `chrony`/`ntp`）。
+
+**交易命令报 "trading is disabled"**
+
+在 MCP 客户端的 env 配置中设置 `YELLOW_PRO_ENABLE_TRADING=true`。
+这是有意设计——不要绕过它直接调 REST API。
+
+## 风险警告
+
+交易存在亏损风险。使用前请注意：
+
+- **保护好你的凭证**——API key 只授予最小必要权限，切勿提交到代码仓库。
+- **先在测试环境验证**——先用 `YELLOW_PRO_SANDBOX=true` 在 staging 环境跑通，
+  再切换到生产环境。
+- **交易默认关闭**——下单类工具仅在 `YELLOW_PRO_ENABLE_TRADING=true` 时才会注册。
+  Agent 提出的每一笔订单，执行前都应人工确认。
+- **一切操作由你发起**——所有行为都来源于你或你的 AI 助手；
+  维护者不对 Agent 行为造成的亏损负责。
+
 ## 开发
 
 ```bash

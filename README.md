@@ -103,6 +103,52 @@ Amounts and prices are decimal strings. All results are raw exchange JSON.
 
 The `yellow-pro` CLI mirrors the same surface — `yellow-pro --help`.
 
+## Troubleshooting
+
+**MCP client shows no tools / server fails to connect**
+
+- Register through the CLI (`yellow-pro setup claude-code`, or `claude mcp add`
+  directly) rather than editing config files by hand — Claude Code reads MCP config
+  from `~/.claude.json`, not `~/.claude/settings.json`.
+- The client spawns the server without loading your shell profile, so
+  `yellow-pro-mcp` must be on the client's `PATH`. Check with `which yellow-pro-mcp`;
+  if the installer printed a PATH hint, add that directory to your profile and
+  restart the client.
+- Restart the client after changing MCP config — servers connect at session start.
+- Verify the server itself starts:
+
+```bash
+echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}' | yellow-pro-mcp
+```
+
+**Authentication errors (`invalid_api_key`, `invalid_timestamp`)**
+
+- Private tools need all three of `YELLOW_PRO_API_KEY`, `YELLOW_PRO_API_SECRET`,
+  `YELLOW_PRO_APP_SESSION_ID`, and they must match the environment you are hitting
+  (`YELLOW_PRO_SANDBOX=true` keys do not work on production, and vice versa).
+- `invalid_timestamp` means the machine clock is more than a few seconds off the
+  exchange's — sync it (e.g. `sudo sntp -sS time.apple.com` on macOS, `chrony`/`ntp`
+  on Linux).
+
+**Trading commands fail with "trading is disabled"**
+
+Set `YELLOW_PRO_ENABLE_TRADING=true` in the MCP client's env config. This is
+intentional — do not work around it by calling the REST API directly.
+
+## Risk warning
+
+Trading involves risk of loss. Before use:
+
+- **Protect your credentials** — grant API keys the minimum permissions needed and
+  never commit them to source control.
+- **Test on staging first** — run with `YELLOW_PRO_SANDBOX=true` against the staging
+  environment before pointing at production.
+- **Trading is off by default** — order/placement tools only exist when
+  `YELLOW_PRO_ENABLE_TRADING=true`. Review every order the agent proposes before
+  letting it through.
+- **You are in control** — all actions are initiated by you or your AI assistant;
+  the maintainers are not responsible for losses from agent behavior.
+
 ## Development
 
 ```bash
