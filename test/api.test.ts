@@ -44,24 +44,25 @@ test("perp single order shape matches reference", async () => {
   assert.equal(body.price, "52000");
 });
 
-test("perp batch omits margin_mode, spot cancel includes type", async () => {
+test("spot cancel includes type", async () => {
   const { client, calls } = stubClient();
-  await api.placeOrders(client, "perp", [
-    { market: "BTCUSDT-PERP", side: "sell", order_type: "limit", amount: "1", price: "9", post_only: true },
-  ]);
-  const op = (calls[0].params.operations as Params[])[0];
-  assert.equal(op.operation, "create");
-  assert.equal(op.type, "post_only");
-  assert.equal("margin_mode" in op, false);
-
   await api.cancelOrder(client, "spot", "BTCYTEST.USD", "uuid-1");
-  assert.equal(calls[1].method, "DELETE");
-  assert.deepEqual(calls[1].params, { order_uuid: "uuid-1", market: "BTCYTEST.USD", type: "limit" });
+  assert.equal(calls[0].method, "DELETE");
+  assert.deepEqual(calls[0].params, { order_uuid: "uuid-1", market: "BTCYTEST.USD", type: "limit" });
 });
 
-test("empty batches are rejected locally", () => {
+test("fee schedule and position funding match the staging OpenAPI", async () => {
+  const { client, calls } = stubClient();
+  await api.feeSchedule(client);
+  await api.fundingPayments(client, "position", "position-1", { page: 2 });
+
+  assert.equal(calls[0].path, "account/fee-schedule");
+  assert.equal(calls[1].path, "perpetual/position/funding-payments");
+  assert.deepEqual(calls[1].params, { position_id: "position-1", page: 2 });
+});
+
+test("empty cancel batches are rejected locally", () => {
   const { client } = stubClient();
-  assert.throws(() => api.placeOrders(client, "spot", []), /must not be empty/);
   assert.throws(() => api.cancelOrders(client, "perp", "BTCUSDT-PERP", []), /must not be empty/);
 });
 

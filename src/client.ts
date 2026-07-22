@@ -15,6 +15,24 @@ export const SANDBOX_BASE_URL = "https://api.uat.yellow.pro.neodax.app";
 
 export type Params = Record<string, unknown>;
 
+function stableJson(value: unknown): string {
+  if (Array.isArray(value)) {
+    return `[${value.map(stableJson).join(",")}]`;
+  }
+  if (typeof value === "object" && value !== null) {
+    const record = value as Record<string, unknown>;
+    const fields = Object.keys(record)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${stableJson(record[key])}`);
+    return `{${fields.join(",")}}`;
+  }
+  return JSON.stringify(value) ?? "null";
+}
+
+function canonicalJson(value: object): string {
+  return stableJson(JSON.parse(JSON.stringify(value)) as unknown);
+}
+
 export function canonicalize(params: Params): string {
   return Object.keys(params)
     .sort()
@@ -24,7 +42,7 @@ export function canonicalize(params: Params): string {
       if (typeof value === "boolean") {
         text = value ? "true" : "false";
       } else if (typeof value === "object" && value !== null) {
-        text = JSON.stringify(value);
+        text = canonicalJson(value);
       } else {
         text = String(value);
       }

@@ -196,22 +196,22 @@ export function createServer(config: ServerConfig): McpServer {
     );
     server.registerTool(
       "get_fee_schedule",
-      { description: "Perpetual account fee schedule.", inputSchema: {} },
+      { description: "Authoritative exchange fee tier schedule.", inputSchema: {} },
       async () => jsonResult(await api.feeSchedule(client)),
     );
     server.registerTool(
       "get_funding_payments",
       {
-        description: "Funding payments, account-wide or per-position.",
+        description: "Funding payments, account-wide or for a position UUID.",
         inputSchema: {
           scope: z.enum(["account", "position"]).default("account"),
-          market: marketId.optional(),
+          position_id: z.string().optional().describe("required when scope=position"),
           page,
           page_size: pageSize,
         },
       },
-      async ({ scope, market, page: p, page_size }) =>
-        jsonResult(await api.fundingPayments(client, scope, market, { page: p, page_size })),
+      async ({ scope, position_id, page: p, page_size }) =>
+        jsonResult(await api.fundingPayments(client, scope, position_id, { page: p, page_size })),
     );
   }
 
@@ -226,22 +226,6 @@ export function createServer(config: ServerConfig): McpServer {
       },
       async ({ market_type, ...order }) =>
         jsonResult(await api.placeOrder(client, market_type, order as OrderInput)),
-    );
-    server.registerTool(
-      "place_orders",
-      {
-        description:
-          "Place a batch of orders in one request (all same market_type). Items may also set " +
-          "post_only and client_order_id (perp).",
-        inputSchema: {
-          market_type: marketType,
-          orders: z
-            .array(z.object({ ...orderItem, post_only: z.boolean().optional(), client_order_id: z.string().optional() }))
-            .min(1),
-        },
-      },
-      async ({ market_type, orders }) =>
-        jsonResult(await api.placeOrders(client, market_type, orders as OrderInput[])),
     );
     server.registerTool(
       "cancel_order",

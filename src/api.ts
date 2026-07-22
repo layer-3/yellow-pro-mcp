@@ -15,20 +15,14 @@ export interface OrderInput {
   amount: string;
   price?: string;
   time_in_force?: string;
-  post_only?: boolean;
   reduce_only?: boolean;
   leverage?: string;
   direction?: "long" | "short" | "both";
-  client_order_id?: string;
 }
 
 export interface PageQuery {
   page?: number;
   page_size?: number;
-}
-
-function resolveType(order: OrderInput): string {
-  return order.post_only ? "post_only" : order.order_type;
 }
 
 function resolveTimeInForce(type: string, timeInForce?: string): string {
@@ -109,22 +103,26 @@ export const api = {
 
   positionMode: (c: YellowProClient) => c.private("GET", "perpetual/accounts"),
 
-  feeSchedule: (c: YellowProClient) => c.private("GET", "perpetual/account/fee-schedule"),
+  feeSchedule: (c: YellowProClient) => c.private("GET", "account/fee-schedule"),
 
   fundingPayments: (
     c: YellowProClient,
     scope: "account" | "position" = "account",
-    market?: string,
+    positionId?: string,
     query: PageQuery = {},
-  ) =>
-    c.private(
+  ) => {
+    if (scope === "position" && !positionId) {
+      throw new YellowProError("position funding payments require position_id");
+    }
+    return c.private(
       "GET",
       scope === "position" ? "perpetual/position/funding-payments" : "perpetual/account/funding-payments",
-      { market, ...query },
-    ),
+      scope === "position" ? { position_id: positionId, ...query } : { ...query },
+    );
+  },
 
   placeOrder: (c: YellowProClient, marketType: MarketType, order: OrderInput) => {
-    const type = order.order_type; // single-order endpoint takes limit|market; post_only is batch-only
+    const type = order.order_type;
     requirePrice(order, type);
     const body: Params = {
       market: order.market,
@@ -145,55 +143,6 @@ export const api = {
       }
     }
     return c.private("POST", `${PREFIX[marketType]}/order`, body);
-  },
-
-  placeOrders: (c: YellowProClient, marketType: MarketType, orders: OrderInput[]) => {
-    if (orders.length === 0) {
-      throw new YellowProError("orders must not be empty");
-    }
-    if (marketType === "perp") {
-      const operations = orders.map((order) => {
-        const type = resolveType(order);
-        requirePrice(order, type);
-        const op: Params = {
-          operation: "create",
-          market: order.market,
-          side: order.side,
-          direction: resolveDirection(order),
-          amount: order.amount,
-          type,
-          leverage: order.leverage ?? "1",
-          time_in_force: resolveTimeInForce(type, order.time_in_force),
-        };
-        if (type !== "market" && order.price !== undefined) {
-          op.price = order.price;
-        }
-        if (order.reduce_only) {
-          op.reduce_only = true;
-        }
-        if (order.client_order_id !== undefined) {
-          op.client_operation_id = order.client_order_id;
-        }
-        return op;
-      });
-      return c.private("POST", "perpetual/order/batch", { operations });
-    }
-    const operations = orders.map((order) => {
-      const type = resolveType(order);
-      requirePrice(order, type);
-      const spotOrder: Params = {
-        market: order.market,
-        side: order.side,
-        amount: order.amount,
-        type,
-        time_in_force: resolveTimeInForce(type, order.time_in_force),
-      };
-      if (type !== "market" && order.price !== undefined) {
-        spotOrder.price = order.price;
-      }
-      return { action: "create", order: spotOrder };
-    });
-    return c.private("POST", "spot/orders/batch", { operations });
   },
 
   cancelOrder: (

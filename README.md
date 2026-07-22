@@ -93,8 +93,7 @@ An explicit `YELLOW_PRO_BASE_URL` takes precedence over sandbox mode.
 - **account**: `get_balance`, `get_open_orders`, `get_order_history`, `get_my_trades`,
   `get_positions`, `get_position_history`, `get_position_mode`, `get_fee_schedule`,
   `get_funding_payments`
-- **trading** (opt-in): `place_order`, `place_orders` (batch, supports `post_only` /
-  `client_order_id`), `cancel_order`, `cancel_orders` (batch), `set_leverage`,
+- **trading** (opt-in): `place_order`, `cancel_order`, `cancel_orders` (batch), `set_leverage`,
   `set_position_mode`, `transfer`
 
 Markets use native ids: spot `BTCYTEST.USD`, perpetual `BTCYTEST.USD-PERP`.

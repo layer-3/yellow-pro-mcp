@@ -31,6 +31,16 @@ test("signature matches the reference implementation", () => {
   assert.equal(sign("topsecret", "POST", "perpetual/order", "1700000000", PARAMS), EXPECTED_SIGNATURE);
 });
 
+test("canonicalize sorts keys inside batch cancel operations", () => {
+  assert.equal(
+    canonicalize({
+      app_session_id: "sess-1",
+      operations: [{ action: "cancel", cancel: { order_uuid: "uuid-1", market: "ETHUSDT" } }],
+    }),
+    'app_session_id=sess-1|operations=[{"action":"cancel","cancel":{"market":"ETHUSDT","order_uuid":"uuid-1"}}]',
+  );
+});
+
 test("empty params", () => {
   assert.equal(canonicalize({}), "");
   assert.equal(sign("s", "GET", "spot/account", "1", {}).length, 64);

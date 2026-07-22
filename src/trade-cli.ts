@@ -31,7 +31,7 @@ Account (needs YELLOW_PRO_API_KEY / _API_SECRET / _APP_SESSION_ID):
   yellow-pro position-history [--market M] [--page N] [--page-size N]
   yellow-pro position-mode
   yellow-pro fee-schedule
-  yellow-pro funding-payments [--scope account|position] [--market M] [--page N] [--page-size N]
+  yellow-pro funding-payments [--scope account|position] [--position-id UUID] [--page N] [--page-size N]
 
 Trading (needs YELLOW_PRO_ENABLE_TRADING=true):
   yellow-pro place <spot|perp> <market> <buy|sell> <limit|market> <amount> [price]
@@ -171,6 +171,7 @@ async function run(): Promise<unknown> {
       page: { type: "string" },
       "page-size": { type: "string" },
       market: { type: "string" },
+      "position-id": { type: "string" },
       scope: { type: "string" },
       tif: { type: "string" },
       "reduce-only": { type: "boolean" },
@@ -228,7 +229,7 @@ async function run(): Promise<unknown> {
       return api.fundingPayments(
         client,
         values.scope === undefined ? "account" : oneOf(values.scope, "scope", ["account", "position"] as const),
-        values.market,
+        values["position-id"],
         pageQuery,
       );
     case "place": {

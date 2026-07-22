@@ -15,7 +15,7 @@ const ACCOUNT_TOOLS = [
   "get_position_history", "get_position_mode", "get_fee_schedule", "get_funding_payments",
 ];
 const TRADING_TOOLS = [
-  "place_order", "place_orders", "cancel_order", "cancel_orders",
+  "place_order", "cancel_order", "cancel_orders",
   "set_leverage", "set_position_mode", "transfer",
 ];
 
