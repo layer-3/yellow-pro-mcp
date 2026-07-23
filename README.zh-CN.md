@@ -97,6 +97,19 @@ Agent skill 目录，例如 `~/.claude/skills/yellow-pro/`。
 市场使用原生 id：现货如 `ETHUSDT`，永续如 `BTCUSDT-PERP`。
 数量和价格都是十进制字符串。所有结果均为交易所原始 JSON。
 
+`place_order` 对现货和永续都支持以下单笔订单类型：
+
+- `limit`：必须提供 `price`
+- `market`：不需要 `price`
+- `post_only`：必须提供 `price`，保证只做 maker
+- `trigger_limit`（Stop Limit）：必须同时提供 `trigger_price` 和 `price`
+- `trigger_market`（Stop Market）：必须提供 `trigger_price`
+
+永续条件单还可传 `trigger_type`，值为 `stop_loss` 或 `take_profit`。
+查询订单时会返回分类后的条件单类型，例如 `stop_limit`、`stop_loss`、
+`take_limit` 或 `take_profit`；`cancel_order` 同时接受下单时的
+`trigger_*` 和这些查询返回类型，并会为现货撤单自动规范化。
+
 `yellow-pro` CLI 提供同样的功能——`yellow-pro --help`。
 
 ## 故障排查

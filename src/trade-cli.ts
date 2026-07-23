@@ -35,9 +35,11 @@ Account (needs YELLOW_PRO_API_KEY / _API_SECRET / _APP_SESSION_ID):
   yellow-pro funding-payments [--scope account|position] [--position-id UUID] [--page N] [--page-size N]
 
 Trading (needs YELLOW_PRO_ENABLE_TRADING=true):
-  yellow-pro place <spot|perp> <market> <buy|sell> <limit|market> <amount> [price]
+  yellow-pro place <spot|perp> <market> <buy|sell> <limit|market|post_only|trigger_limit|trigger_market> <amount> [price]
+      [--trigger-price P] [--trigger-type stop_loss|take_profit]
       [--tif gtc|ioc|fok] [--reduce-only] [--leverage L] [--direction long|short|both]
-  yellow-pro cancel <spot|perp> <market> <order_uuid> [--order-type limit|market]
+  yellow-pro cancel <spot|perp> <market> <order_uuid>
+      [--order-type limit|market|post_only|trigger_limit|trigger_market|stop_limit|stop_market|stop_loss|take_limit|take_market|take_profit]
   yellow-pro cancel-many <spot|perp> <market> <order_uuid> [order_uuid ...]
   yellow-pro set-leverage <market> <leverage>
   yellow-pro set-position-mode <market> <hedge|one_way>
@@ -179,6 +181,8 @@ async function run(): Promise<unknown> {
       leverage: { type: "string" },
       direction: { type: "string" },
       "order-type": { type: "string" },
+      "trigger-price": { type: "string" },
+      "trigger-type": { type: "string" },
       help: { type: "boolean", short: "h" },
       version: { type: "boolean", short: "v" },
     },
@@ -242,9 +246,15 @@ async function run(): Promise<unknown> {
       const order: OrderInput = {
         market: req(args[1], "market"),
         side: oneOf(args[2], "side", ["buy", "sell"]),
-        order_type: oneOf(args[3], "order-type", ["limit", "market"]),
+        order_type: oneOf(args[3], "order-type", [
+          "limit", "market", "post_only", "trigger_limit", "trigger_market",
+        ] as const),
         amount: req(args[4], "amount"),
         price: args[5],
+        trigger_price: values["trigger-price"],
+        trigger_type: values["trigger-type"] === undefined
+          ? undefined
+          : oneOf(values["trigger-type"], "trigger-type", ["stop_loss", "take_profit"] as const),
         time_in_force: values.tif,
         reduce_only: values["reduce-only"],
         leverage: values.leverage,
@@ -263,7 +273,10 @@ async function run(): Promise<unknown> {
         req(args[2], "order_uuid"),
         values["order-type"] === undefined
           ? "limit"
-          : oneOf(values["order-type"], "order-type", ["limit", "market"] as const),
+          : oneOf(values["order-type"], "order-type", [
+            "limit", "market", "post_only", "trigger_limit", "trigger_market",
+            "stop_limit", "stop_market", "stop_loss", "take_limit", "take_market", "take_profit",
+          ] as const),
       );
     case "cancel-many":
       tradingEnabled();

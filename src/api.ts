@@ -7,13 +7,24 @@ import { Params, YellowProClient, YellowProError } from "./client.js";
 
 export const PREFIX = { spot: "spot", perp: "perpetual" } as const;
 export type MarketType = keyof typeof PREFIX;
+export type OrderType = "limit" | "market" | "post_only" | "trigger_limit" | "trigger_market";
+export type CancelOrderType =
+  | OrderType
+  | "stop_limit"
+  | "stop_market"
+  | "stop_loss"
+  | "take_limit"
+  | "take_market"
+  | "take_profit";
 
 export interface OrderInput {
   market: string;
   side: "buy" | "sell";
-  order_type: "limit" | "market";
+  order_type: OrderType;
   amount: string;
   price?: string;
+  trigger_price?: string;
+  trigger_type?: "stop_loss" | "take_profit";
   time_in_force?: string;
   reduce_only?: boolean;
   leverage?: string;
@@ -26,7 +37,7 @@ export interface PageQuery {
 }
 
 function resolveTimeInForce(type: string, timeInForce?: string): string {
-  return (timeInForce ?? (type === "market" ? "ioc" : "gtc")).toLowerCase();
+  return (timeInForce ?? (type === "market" || type === "trigger_market" ? "ioc" : "gtc")).toLowerCase();
 }
 
 function resolveDirection(order: OrderInput): string {
@@ -39,10 +50,27 @@ function resolveDirection(order: OrderInput): string {
   return order.side === "buy" ? "long" : "short";
 }
 
-function requirePrice(order: OrderInput, type: string): void {
-  if (type !== "market" && order.price === undefined) {
+function validateOrderPrices(order: OrderInput): void {
+  if (["limit", "post_only", "trigger_limit"].includes(order.order_type) && order.price === undefined) {
+    const type = order.order_type;
     throw new YellowProError(`${type} orders require a price`);
   }
+  if (
+    (order.order_type === "trigger_limit" || order.order_type === "trigger_market")
+    && order.trigger_price === undefined
+  ) {
+    throw new YellowProError(`${order.order_type} orders require trigger_price`);
+  }
+}
+
+function normalizeSpotCancelType(orderType: CancelOrderType): CancelOrderType {
+  if (orderType === "trigger_limit") {
+    return "stop_limit";
+  }
+  if (orderType === "trigger_market") {
+    return "stop_market";
+  }
+  return orderType;
 }
 
 export const api = {
@@ -123,7 +151,7 @@ export const api = {
 
   placeOrder: (c: YellowProClient, marketType: MarketType, order: OrderInput) => {
     const type = order.order_type;
-    requirePrice(order, type);
+    validateOrderPrices(order);
     const body: Params = {
       market: order.market,
       side: order.side,
@@ -131,13 +159,18 @@ export const api = {
       amount: order.amount,
       time_in_force: resolveTimeInForce(type, order.time_in_force),
     };
-    if (type !== "market" && order.price !== undefined) {
+    if (["limit", "post_only", "trigger_limit"].includes(type) && order.price !== undefined) {
       body.price = order.price;
+    }
+    if ((type === "trigger_limit" || type === "trigger_market") && order.trigger_price !== undefined) {
+      body.trigger_price = order.trigger_price;
     }
     if (marketType === "perp") {
       body.direction = resolveDirection(order);
       body.leverage = order.leverage ?? "1";
-      body.margin_mode = "cross";
+      if ((type === "trigger_limit" || type === "trigger_market") && order.trigger_type !== undefined) {
+        body.trigger_type = order.trigger_type;
+      }
       if (order.reduce_only) {
         body.reduce_only = true;
       }
@@ -150,11 +183,11 @@ export const api = {
     marketType: MarketType,
     market: string,
     orderId: string,
-    orderType: "limit" | "market" = "limit",
+    orderType: CancelOrderType = "limit",
   ) => {
     const params: Params = { order_uuid: orderId, market };
     if (marketType === "spot") {
-      params.type = orderType; // spot cancel requires the order 'type' field
+      params.type = normalizeSpotCancelType(orderType);
     }
     return c.private("DELETE", `${PREFIX[marketType]}/order`, params);
   },

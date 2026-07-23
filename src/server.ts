@@ -38,14 +38,25 @@ const marketType = z.enum(["spot", "perp"]);
 const marketId = z.string().describe("market id, e.g. 'ETHUSDT' (spot) or 'BTCUSDT-PERP' (perp)");
 const page = z.number().int().optional().describe("page number, 1-based");
 const pageSize = z.number().int().optional().describe("results per page (default 100)");
+const orderType = z.enum(["limit", "market", "post_only", "trigger_limit", "trigger_market"]);
+const cancelOrderType = z.enum([
+  "limit", "market", "post_only", "trigger_limit", "trigger_market",
+  "stop_limit", "stop_market", "stop_loss", "take_limit", "take_market", "take_profit",
+]);
 
 const orderItem = {
   market: marketId.describe("market id, e.g. 'ETHUSDT' or 'BTCUSDT-PERP'"),
   side: z.enum(["buy", "sell"]),
-  order_type: z.enum(["limit", "market"]),
+  order_type: orderType.describe(
+    "limit/market; post_only guarantees maker-only; trigger_limit/trigger_market are Stop Limit/Stop Market",
+  ),
   amount: z.string().describe("base amount as a decimal string"),
-  price: z.string().optional().describe("required for limit orders"),
-  time_in_force: z.string().optional().describe("gtc/ioc/fok; default gtc for limit, ioc for market"),
+  price: z.string().optional().describe("required for limit, post_only, and trigger_limit orders"),
+  trigger_price: z.string().optional().describe("required for trigger_limit and trigger_market orders"),
+  trigger_type: z.enum(["stop_loss", "take_profit"]).optional()
+    .describe("perp trigger orders only; optional stop-loss/take-profit classification"),
+  time_in_force: z.string().optional()
+    .describe("gtc/ioc/fok; default gtc for limit-style orders, ioc for market-style orders"),
   reduce_only: z.boolean().optional(),
   leverage: z.string().optional().describe("perp only, decimal string, default '1'"),
   direction: z.enum(["long", "short", "both"]).optional()
@@ -221,8 +232,8 @@ export function createServer(config: ServerConfig): McpServer {
       "place_order",
       {
         description:
-          "Place a single order. Returns order_uuid. price required for limit orders. " +
-          "Perp orders default to cross margin.",
+          "Place one limit, market, post-only, Stop Limit, or Stop Market order. Returns order_uuid. " +
+          "Perpetual positions use cross margin.",
         inputSchema: { market_type: marketType, ...orderItem },
       },
       async ({ market_type, ...order }) =>
@@ -236,7 +247,7 @@ export function createServer(config: ServerConfig): McpServer {
           market_type: marketType,
           market: marketId,
           order_id: z.string(),
-          order_type: z.enum(["limit", "market"]).default("limit"),
+          order_type: cancelOrderType.default("limit"),
         },
       },
       async ({ market_type, market, order_id, order_type }) =>

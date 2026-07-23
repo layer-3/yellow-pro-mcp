@@ -39,16 +39,100 @@ test("perp single order shape matches reference", async () => {
   const body = calls[0].params;
   assert.equal(body.direction, "long");
   assert.equal(body.leverage, "1");
-  assert.equal(body.margin_mode, "cross");
+  assert.equal("margin_mode" in body, false);
   assert.equal(body.time_in_force, "gtc");
   assert.equal(body.price, "52000");
 });
 
+test("spot and perp post-only orders preserve the exchange order type", async () => {
+  const { client, calls } = stubClient();
+  await api.placeOrder(client, "spot", {
+    market: "ETHUSDT", side: "buy", order_type: "post_only", amount: "0.01", price: "1800",
+  });
+  await api.placeOrder(client, "perp", {
+    market: "ETHUSDT-PERP", side: "sell", order_type: "post_only", amount: "0.01", price: "2100",
+  });
+
+  assert.equal(calls[0].params.type, "post_only");
+  assert.equal(calls[0].params.price, "1800");
+  assert.equal(calls[0].params.time_in_force, "gtc");
+  assert.equal(calls[1].params.type, "post_only");
+  assert.equal(calls[1].params.price, "2100");
+  assert.equal(calls[1].params.time_in_force, "gtc");
+});
+
+test("conditional order shapes match the Spot and Perpetual APIs", async () => {
+  const { client, calls } = stubClient();
+  await api.placeOrder(client, "spot", {
+    market: "ETHUSDT",
+    side: "buy",
+    order_type: "trigger_limit",
+    amount: "0.01",
+    price: "2050",
+    trigger_price: "2000",
+  });
+  await api.placeOrder(client, "perp", {
+    market: "ETHUSDT-PERP",
+    side: "sell",
+    order_type: "trigger_market",
+    amount: "0.01",
+    trigger_price: "1800",
+    trigger_type: "stop_loss",
+  });
+
+  assert.deepEqual(calls[0].params, {
+    market: "ETHUSDT",
+    side: "buy",
+    type: "trigger_limit",
+    amount: "0.01",
+    price: "2050",
+    trigger_price: "2000",
+    time_in_force: "gtc",
+  });
+  assert.equal(calls[1].params.type, "trigger_market");
+  assert.equal(calls[1].params.trigger_price, "1800");
+  assert.equal(calls[1].params.trigger_type, "stop_loss");
+  assert.equal(calls[1].params.time_in_force, "ioc");
+  assert.equal("price" in calls[1].params, false);
+});
+
+test("conditional and post-only orders enforce their required prices", () => {
+  const { client } = stubClient();
+  assert.throws(
+    () => api.placeOrder(client, "spot", {
+      market: "ETHUSDT", side: "buy", order_type: "post_only", amount: "0.01",
+    }),
+    /post_only orders require a price/,
+  );
+  assert.throws(
+    () => api.placeOrder(client, "spot", {
+      market: "ETHUSDT", side: "buy", order_type: "trigger_limit", amount: "0.01", price: "2000",
+    }),
+    /trigger_limit orders require trigger_price/,
+  );
+  assert.throws(
+    () => api.placeOrder(client, "perp", {
+      market: "ETHUSDT-PERP", side: "sell", order_type: "trigger_market", amount: "0.01",
+    }),
+    /trigger_market orders require trigger_price/,
+  );
+});
+
 test("spot cancel includes type", async () => {
   const { client, calls } = stubClient();
-  await api.cancelOrder(client, "spot", "BTCYTEST.USD", "uuid-1");
+  await api.cancelOrder(client, "spot", "BTCYTEST.USD", "uuid-1", "post_only");
   assert.equal(calls[0].method, "DELETE");
-  assert.deepEqual(calls[0].params, { order_uuid: "uuid-1", market: "BTCYTEST.USD", type: "limit" });
+  assert.deepEqual(calls[0].params, { order_uuid: "uuid-1", market: "BTCYTEST.USD", type: "post_only" });
+});
+
+test("spot cancel normalizes conditional request types to their readback types", async () => {
+  const { client, calls } = stubClient();
+  await api.cancelOrder(client, "spot", "ETHUSDT", "uuid-2", "trigger_limit");
+  await api.cancelOrder(client, "spot", "ETHUSDT", "uuid-3", "trigger_market");
+  await api.cancelOrder(client, "spot", "ETHUSDT", "uuid-4", "stop_loss");
+  assert.equal(calls[0].params.type, "stop_limit");
+  assert.equal(calls[1].params.type, "stop_market");
+  assert.equal(calls[2].params.type, "stop_loss");
 });
 
 test("fee schedule and position funding match the staging OpenAPI", async () => {

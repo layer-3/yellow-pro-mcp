@@ -101,6 +101,20 @@ An explicit `YELLOW_PRO_BASE_URL` takes precedence over sandbox mode.
 Markets use native ids: spot `ETHUSDT`, perpetual `BTCUSDT-PERP`.
 Amounts and prices are decimal strings. All results are raw exchange JSON.
 
+`place_order` supports the same common single-order types for Spot and Perpetual:
+
+- `limit`: requires `price`
+- `market`: no `price`
+- `post_only`: requires `price` and guarantees the order is maker-only
+- `trigger_limit` (Stop Limit): requires both `trigger_price` and `price`
+- `trigger_market` (Stop Market): requires `trigger_price`
+
+Perpetual trigger orders also accept the optional `trigger_type` value
+`stop_loss` or `take_profit`. Order queries return the classified conditional
+type, such as `stop_limit`, `stop_loss`, `take_limit`, or `take_profit`.
+`cancel_order` accepts either the request type (`trigger_*`) or these returned
+types and normalizes Spot cancellation.
+
 The `yellow-pro` CLI mirrors the same surface — `yellow-pro --help`.
 
 ## Troubleshooting

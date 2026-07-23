@@ -30,6 +30,17 @@ async function toolNames(enableTrading: boolean, modules: Module[] = ALL_MODULES
   return new Set(tools.map((tool) => tool.name));
 }
 
+async function toolSchema(name: string): Promise<Record<string, unknown>> {
+  const server = createServer({ client: new YellowProClient(), enableTrading: true, modules: ALL_MODULES });
+  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+  const mcpClient = new Client({ name: "test", version: "0.0.0" });
+  await Promise.all([server.connect(serverTransport), mcpClient.connect(clientTransport)]);
+  const { tools } = await mcpClient.listTools();
+  await mcpClient.close();
+  await server.close();
+  return tools.find((tool) => tool.name === name)?.inputSchema as Record<string, unknown>;
+}
+
 test("read-only by default", async () => {
   const names = await toolNames(false);
   assert.deepEqual(names, new Set([...MARKET_TOOLS, ...ACCOUNT_TOOLS]));
@@ -38,6 +49,25 @@ test("read-only by default", async () => {
 test("trading tools appear when enabled", async () => {
   const names = await toolNames(true);
   assert.deepEqual(names, new Set([...MARKET_TOOLS, ...ACCOUNT_TOOLS, ...TRADING_TOOLS]));
+});
+
+test("place_order exposes post-only and conditional order parameters", async () => {
+  const schema = await toolSchema("place_order");
+  const properties = schema.properties as Record<string, Record<string, unknown>>;
+  assert.deepEqual((properties.order_type as { enum: string[] }).enum, [
+    "limit", "market", "post_only", "trigger_limit", "trigger_market",
+  ]);
+  assert.equal(properties.trigger_price.type, "string");
+  assert.deepEqual((properties.trigger_type as { enum: string[] }).enum, ["stop_loss", "take_profit"]);
+});
+
+test("cancel_order accepts request and readback conditional types", async () => {
+  const schema = await toolSchema("cancel_order");
+  const properties = schema.properties as Record<string, Record<string, unknown>>;
+  assert.deepEqual((properties.order_type as { enum: string[] }).enum, [
+    "limit", "market", "post_only", "trigger_limit", "trigger_market",
+    "stop_limit", "stop_market", "stop_loss", "take_limit", "take_market", "take_profit",
+  ]);
 });
 
 test("module filtering", async () => {
