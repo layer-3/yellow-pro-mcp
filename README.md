@@ -116,10 +116,11 @@ type, such as `stop_limit`, `stop_loss`, `take_limit`, or `take_profit`.
 `cancel_order` accepts either the request type (`trigger_*`) or these returned
 types and normalizes Spot cancellation.
 
-List tools use the documented cursor protocol. Omit `cursor` for the first
-request; the MCP sends `use_cursor=true`. Pass the returned `next_cursor` to
-fetch the next page. `page_size` defaults to 50 and is capped at 100, except
-fill-level position history where the documented maximum is 500.
+Most list tools use the documented opt-in cursor protocol. Omit `cursor` for
+the first request; the MCP sends `use_cursor=true`. Pass the returned
+`next_cursor` to fetch the next page. `page_size` defaults to 50 and is capped
+at 100. Fill-level position history is cursor-native: its first request omits
+both `cursor` and `use_cursor`, and its documented `page_size` maximum is 500.
 
 The `yellow-pro` CLI mirrors the same surface — `yellow-pro --help`.
 

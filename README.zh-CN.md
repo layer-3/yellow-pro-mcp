@@ -111,9 +111,10 @@ Agent skill 目录，例如 `~/.claude/skills/yellow-pro/`。
 `take_limit` 或 `take_profit`；`cancel_order` 同时接受下单时的
 `trigger_*` 和这些查询返回类型，并会为现货撤单自动规范化。
 
-列表工具使用文档规定的 cursor 分页。第一次请求不传 `cursor`，MCP 会自动发送
-`use_cursor=true`；下一页传入响应里的 `next_cursor`。`page_size` 默认 50、最大
-100；单个历史持仓的成交明细分页按文档最大支持 500。
+大多数列表工具使用文档规定的 opt-in cursor 分页。第一次请求不传 `cursor`，MCP
+会自动发送 `use_cursor=true`；下一页传入响应里的 `next_cursor`。`page_size`
+默认 50、最大 100。单个历史持仓的成交明细接口原生使用 cursor：第一次请求既不传
+`cursor`，也不传 `use_cursor`，其 `page_size` 按文档最大支持 500。
 
 `yellow-pro` CLI 提供同样的功能——`yellow-pro --help`。
 
