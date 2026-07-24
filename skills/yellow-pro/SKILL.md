@@ -26,7 +26,9 @@ Environment variables (already set if the MCP server is configured):
 3. Account: `yellow-pro balance spot` or `yellow-pro balance perp`,
    `yellow-pro open-orders perp`, `yellow-pro positions`,
    `yellow-pro trades perp --market <market>`, `yellow-pro fee-tier`
-4. Trading (amounts/prices are decimal strings):
+4. Trading (amounts/prices are decimal strings). For both Spot and Perpetual markets, an order
+   amount is quantity in the market's base asset: `ETHUSDT` uses ETH and `BTCUSDT-PERP` uses BTC.
+   Prices use the market's quote asset. Label both values with their correct units when confirming.
    - `yellow-pro place perp BTCUSDT-PERP buy limit 0.001 65000 --leverage 5 --client-order-id my-id`
    - `yellow-pro place spot ETHUSDT sell market 0.01`
    - `yellow-pro cancel perp BTCUSDT-PERP <order_uuid>`
@@ -38,6 +40,7 @@ Environment variables (already set if the MCP server is configured):
 ## Safety
 
 - Never place orders unless the user explicitly asked for them in this conversation.
-- Confirm market id, side, amount, and price back to the user before placing an order.
+- Confirm market id, side, amount (quantity in the market's base asset), and price back to the user
+  before placing an order.
 - If a trading command fails with "trading is disabled", tell the user to set
   `YELLOW_PRO_ENABLE_TRADING=true` — do not work around it.

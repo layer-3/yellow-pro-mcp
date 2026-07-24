@@ -23,7 +23,9 @@ export const orderItem = {
   order_type: orderType.describe(
     "limit/market; post_only guarantees maker-only; trigger_limit/trigger_market are Stop Limit/Stop Market",
   ),
-  amount: z.string().describe("base amount as a decimal string"),
+  amount: z.string().describe(
+    "quantity in the market's base asset as a decimal string; e.g. ETH for ETHUSDT or BTC for BTCUSDT-PERP",
+  ),
   price: z.string().optional().describe("required for limit, post_only, and trigger_limit orders"),
   trigger_price: z.string().optional().describe("required for trigger_limit and trigger_market orders"),
   trigger_type: z.enum(["stop_loss", "take_profit"]).optional()

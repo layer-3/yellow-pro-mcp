@@ -47,7 +47,10 @@ export function createServer(config: ServerConfig): McpServer {
     {
       instructions:
         "yellow_pro exchange. Use native market ids such as ETHUSDT and BTCUSDT-PERP. " +
-        "Call get_markets first. Amounts and prices are decimal strings. " +
+        "Call get_markets first. Order amounts are decimal strings representing quantity in the " +
+        "market's base asset for both Spot and Perpetual markets (for example, ETHUSDT amounts are ETH " +
+        "and BTCUSDT-PERP amounts are BTC). Label the amount with that base asset when confirming an " +
+        "order. Prices are decimal strings denominated in the market's quote asset. " +
         "Market data is public; account and trading tools require credentials.",
     },
   );
