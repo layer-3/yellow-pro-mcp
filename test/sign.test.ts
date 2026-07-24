@@ -31,13 +31,13 @@ test("signature matches the reference implementation", () => {
   assert.equal(sign("topsecret", "POST", "perpetual/order", "1700000000", PARAMS), EXPECTED_SIGNATURE);
 });
 
-test("canonicalize sorts keys inside batch cancel operations", () => {
+test("canonicalize sorts keys inside nested request objects", () => {
   assert.equal(
     canonicalize({
       app_session_id: "sess-1",
-      operations: [{ action: "cancel", cancel: { order_uuid: "uuid-1", market: "ETHUSDT" } }],
+      filters: [{ order: { order_uuid: "uuid-1", market: "ETHUSDT" } }],
     }),
-    'app_session_id=sess-1|operations=[{"action":"cancel","cancel":{"market":"ETHUSDT","order_uuid":"uuid-1"}}]',
+    'app_session_id=sess-1|filters=[{"order":{"market":"ETHUSDT","order_uuid":"uuid-1"}}]',
   );
 });
 

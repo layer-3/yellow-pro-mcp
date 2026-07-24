@@ -30,7 +30,8 @@ function stableJson(value: unknown): string {
 }
 
 function canonicalJson(value: object): string {
-  return stableJson(JSON.parse(JSON.stringify(value)) as unknown);
+  const parsed: unknown = JSON.parse(JSON.stringify(value));
+  return stableJson(parsed);
 }
 
 export function canonicalize(params: Params): string {
@@ -162,6 +163,9 @@ export class YellowProClient {
     }
     if (response.status >= 400) {
       throw new YellowProError(`yellow_pro error: ${context}`);
+    }
+    if (response.status === 204) {
+      return null;
     }
     let data: unknown;
     try {

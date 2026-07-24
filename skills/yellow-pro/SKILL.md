@@ -21,15 +21,17 @@ Environment variables (already set if the MCP server is configured):
 
 1. Discover markets first: `yellow-pro markets` — native ids look like `ETHUSDT` (spot) and
    `BTCUSDT-PERP` (perpetual). Check precision/filters before quoting amounts.
-2. Market data: `yellow-pro ticker <market>`, `yellow-pro orderbook <market> --limit 10`,
-   `yellow-pro klines <market> --interval 1h --limit 100`, `yellow-pro funding [market]`
+2. Market data: `yellow-pro ticker <market>`, `yellow-pro orderbook <market>`,
+   `yellow-pro klines <market> --interval 1h --limit 100`, `yellow-pro funding <market>`
 3. Account: `yellow-pro balance spot` or `yellow-pro balance perp`,
    `yellow-pro open-orders perp`, `yellow-pro positions`,
-   `yellow-pro trades perp --market <market>`
+   `yellow-pro trades perp --market <market>`, `yellow-pro fee-tier`
 4. Trading (amounts/prices are decimal strings):
-   - `yellow-pro place perp BTCUSDT-PERP buy limit 0.001 65000 --leverage 5`
+   - `yellow-pro place perp BTCUSDT-PERP buy limit 0.001 65000 --leverage 5 --client-order-id my-id`
    - `yellow-pro place spot ETHUSDT sell market 0.01`
    - `yellow-pro cancel perp BTCUSDT-PERP <order_uuid>`
+   - `yellow-pro cancel-all perp --market BTCUSDT-PERP`
+   - `yellow-pro close-positions --market BTCUSDT-PERP`
    - `yellow-pro set-leverage BTCUSDT-PERP 10`
 5. Run `yellow-pro --help` for the full command list.
 

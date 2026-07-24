@@ -91,12 +91,13 @@ An explicit `YELLOW_PRO_BASE_URL` takes precedence over sandbox mode.
 ## Tools
 
 - **market**: `get_health`, `get_markets`, `get_ticker`, `get_orderbook`, `get_klines`,
-  `get_funding_rate`, `get_funding_rate_history`
+  `get_funding_rate`, `get_funding_rate_history`, `get_networks`, `get_transfer_assets`
 - **account**: `get_balance`, `get_open_orders`, `get_order_history`, `get_my_trades`,
-  `get_positions`, `get_position_history`, `get_position_mode`, `get_fee_schedule`,
-  `get_funding_payments`
-- **trading** (opt-in): `place_order`, `cancel_order`, `cancel_orders` (batch), `set_leverage`,
-  `set_position_mode`, `transfer`
+  `get_positions`, `get_position_history`, `get_position_history_detail`,
+  `get_spot_accounts`, `get_spot_account`, `get_perpetual_accounts`, `get_fee_schedule`,
+  `get_fee_tier`, `get_market_fee_rate`, `get_transaction_history`, `get_funding_payments`
+- **trading** (opt-in): `place_order`, `cancel_order`, `cancel_all_orders`,
+  `close_positions`, `set_leverage`, `transfer`
 
 Markets use native ids: spot `ETHUSDT`, perpetual `BTCUSDT-PERP`.
 Amounts and prices are decimal strings. All results are raw exchange JSON.
@@ -114,6 +115,11 @@ Perpetual trigger orders also accept the optional `trigger_type` value
 type, such as `stop_limit`, `stop_loss`, `take_limit`, or `take_profit`.
 `cancel_order` accepts either the request type (`trigger_*`) or these returned
 types and normalizes Spot cancellation.
+
+List tools use the documented cursor protocol. Omit `cursor` for the first
+request; the MCP sends `use_cursor=true`. Pass the returned `next_cursor` to
+fetch the next page. `page_size` defaults to 50 and is capped at 100, except
+fill-level position history where the documented maximum is 500.
 
 The `yellow-pro` CLI mirrors the same surface — `yellow-pro --help`.
 
@@ -171,7 +177,6 @@ npm test          # signature vectors (cross-checked against the reference impl)
 npm run build
 ```
 
-The wire protocol (HMAC canonicalization, endpoints, order fields) follows the
-reference CCXT-style implementation in the internal `ccxt_cpp` repo
-(`ts/src/neodax.ts`). Not implemented on purpose: EIP-191/JWT auth, WebSocket
-streams — add when needed.
+The endpoint and request contracts follow the current
+[yellow_pro API documentation](https://docs.yellow.pro/api-and-programmatic-access/overview).
+Not implemented on purpose: EIP-191/JWT auth and WebSocket streams.

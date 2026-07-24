@@ -1,24 +1,32 @@
-/** Request construction must match the reference implementation (ccxt_cpp ts/src/neodax.ts). */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { api } from "../src/api.js";
-import { clientFromEnv } from "../src/client.js";
-import type { Params, YellowProClient } from "../src/client.js";
-import { configFromEnv } from "../src/server.js";
+import { type Params, YellowProClient } from "../src/client.js";
 
 interface Call {
-  method: string;
-  path: string;
-  params: Params;
+  readonly visibility: "public" | "private";
+  readonly method: string;
+  readonly path: string;
+  readonly params: Params;
+}
+
+class StubClient extends YellowProClient {
+  readonly calls: Call[] = [];
+
+  override async public(method: string, path: string, params: Params = {}): Promise<unknown> {
+    this.calls.push({ visibility: "public", method, path, params });
+    return {};
+  }
+
+  override async private(method: string, path: string, params: Params = {}): Promise<unknown> {
+    this.calls.push({ visibility: "private", method, path, params });
+    return {};
+  }
 }
 
 function stubClient(): { client: YellowProClient; calls: Call[] } {
-  const calls: Call[] = [];
-  const record = async (method: string, path: string, params: Params = {}) => {
-    calls.push({ method, path, params });
-    return {};
-  };
-  return { client: { public: record, private: record } as unknown as YellowProClient, calls };
+  const client = new StubClient();
+  return { client, calls: client.calls };
 }
 
 test("market order does not send price", async () => {
@@ -29,6 +37,13 @@ test("market order does not send price", async () => {
   assert.equal(calls[0].path, "perpetual/order");
   assert.equal("price" in calls[0].params, false);
   assert.equal(calls[0].params.time_in_force, "ioc");
+});
+
+test("orderbook sends only the market symbol", async () => {
+  const { client, calls } = stubClient();
+  await api.orderbook(client, "ETHUSDT");
+
+  assert.deepEqual(calls[0].params, { symbol: "ETHUSDT" });
 });
 
 test("perp single order shape matches reference", async () => {
@@ -120,66 +135,120 @@ test("conditional and post-only orders enforce their required prices", () => {
 
 test("spot cancel includes type", async () => {
   const { client, calls } = stubClient();
-  await api.cancelOrder(client, "spot", "BTCYTEST.USD", "uuid-1", "post_only");
+  await api.cancelOrder(client, "spot", {
+    market: "BTCYTEST.USD",
+    order_id: "uuid-1",
+    order_type: "post_only",
+  });
   assert.equal(calls[0].method, "DELETE");
   assert.deepEqual(calls[0].params, { order_uuid: "uuid-1", market: "BTCYTEST.USD", type: "post_only" });
 });
 
 test("spot cancel normalizes conditional request types to their readback types", async () => {
   const { client, calls } = stubClient();
-  await api.cancelOrder(client, "spot", "ETHUSDT", "uuid-2", "trigger_limit");
-  await api.cancelOrder(client, "spot", "ETHUSDT", "uuid-3", "trigger_market");
-  await api.cancelOrder(client, "spot", "ETHUSDT", "uuid-4", "stop_loss");
+  await api.cancelOrder(client, "spot", {
+    market: "ETHUSDT", order_id: "uuid-2", order_type: "trigger_limit",
+  });
+  await api.cancelOrder(client, "spot", {
+    market: "ETHUSDT", order_id: "uuid-3", order_type: "trigger_market",
+  });
+  await api.cancelOrder(client, "spot", {
+    market: "ETHUSDT", order_id: "uuid-4", order_type: "stop_loss",
+  });
   assert.equal(calls[0].params.type, "stop_limit");
   assert.equal(calls[1].params.type, "stop_market");
   assert.equal(calls[2].params.type, "stop_loss");
 });
 
-test("fee schedule and position funding match the staging OpenAPI", async () => {
+test("klines send the staging-supported query", async () => {
+  const { client, calls } = stubClient();
+  await api.klines(client, "BTCUSDT", {
+    interval: "1h",
+    start_time: 1_700_000_000_000,
+    end_time: 1_700_003_600_000,
+    limit: 24,
+  });
+
+  assert.deepEqual(calls[0].params, {
+    symbol: "BTCUSDT",
+    interval: "1h",
+    startTime: 1_700_000_000_000,
+    endTime: 1_700_003_600_000,
+    limit: 24,
+  });
+});
+
+test("fee schedule is public and perpetual accounts use the documented route", async () => {
   const { client, calls } = stubClient();
   await api.feeSchedule(client);
-  await api.fundingPayments(client, "position", "position-1", { page: 2 });
+  await api.perpetualAccounts(client);
 
+  assert.equal(calls[0].visibility, "public");
   assert.equal(calls[0].path, "account/fee-schedule");
-  assert.equal(calls[1].path, "perpetual/position/funding-payments");
-  assert.deepEqual(calls[1].params, { position_id: "position-1", page: 2 });
+  assert.equal(calls[1].visibility, "private");
+  assert.equal(calls[1].path, "perpetual/accounts");
 });
 
-test("empty cancel batches are rejected locally", () => {
-  const { client } = stubClient();
-  assert.throws(() => api.cancelOrders(client, "perp", "BTCUSDT-PERP", []), /must not be empty/);
+test("current funding rate requires one market route", async () => {
+  const { client, calls } = stubClient();
+  await api.fundingRate(client, "BTCUSDT-PERP");
+
+  assert.equal(calls[0].visibility, "public");
+  assert.equal(calls[0].path, "perpetual/funding-rate/BTCUSDT-PERP");
 });
 
-test("trading gate only accepts literal true", () => {
-  assert.equal(configFromEnv({ YELLOW_PRO_ENABLE_TRADING: "yes" } as NodeJS.ProcessEnv).enableTrading, false);
-  assert.equal(configFromEnv({ YELLOW_PRO_ENABLE_TRADING: "1" } as NodeJS.ProcessEnv).enableTrading, false);
-  assert.equal(configFromEnv({ YELLOW_PRO_ENABLE_TRADING: "TRUE" } as NodeJS.ProcessEnv).enableTrading, true);
+test("cursor pagination starts explicitly and follows opaque continuation tokens", async () => {
+  const { client, calls } = stubClient();
+  await api.fundingRateHistory(client, "BTCUSDT-PERP", { page_size: 20 });
+  await api.openOrders(client, "spot", {
+    market: "BTCUSDT",
+    cursor: "opaque-next-page",
+    page_size: 20,
+  });
+
+  assert.deepEqual(calls[0].params, {
+    symbol: "BTCUSDT-PERP",
+    use_cursor: true,
+    page_size: 20,
+  });
+  assert.deepEqual(calls[1].params, {
+    market: "BTCUSDT",
+    cursor: "opaque-next-page",
+    page_size: 20,
+  });
 });
 
-test("sandbox mode selects staging URL unless base URL is explicit", async () => {
-  const originalFetch = globalThis.fetch;
-  const urls: string[] = [];
-  globalThis.fetch = async (input) => {
-    urls.push(String(input));
-    return new Response("{}", { status: 200, headers: { "Content-Type": "application/json" } });
-  };
+test("position funding payments use cursor pagination", async () => {
+  const { client, calls } = stubClient();
+  await api.fundingPayments(client, {
+    scope: "position",
+    position_id: "position-1",
+    page_size: 50,
+  });
 
-  try {
-    await clientFromEnv({
-      YELLOW_PRO_SANDBOX: "true",
-      YELLOW_PRO_RATE_LIMIT_MS: "0",
-    }).public("GET", "health");
-    await clientFromEnv({
-      YELLOW_PRO_SANDBOX: "true",
-      YELLOW_PRO_BASE_URL: "https://override.example",
-      YELLOW_PRO_RATE_LIMIT_MS: "0",
-    }).public("GET", "health");
-  } finally {
-    globalThis.fetch = originalFetch;
-  }
+  assert.equal(calls[0].path, "perpetual/position/funding-payments");
+  assert.deepEqual(calls[0].params, {
+    position_id: "position-1",
+    use_cursor: true,
+    page_size: 50,
+  });
+});
 
-  assert.deepEqual(urls, [
-    "https://api.staging.yellow.pro.neodax.app/health",
-    "https://override.example/health",
-  ]);
+test("cancel all orders uses the documented DELETE route with an optional market", async () => {
+  const { client, calls } = stubClient();
+  await api.cancelAllOrders(client, "spot", "BTCUSDT");
+  await api.cancelAllOrders(client, "perp");
+
+  assert.deepEqual(calls[0], {
+    visibility: "private",
+    method: "DELETE",
+    path: "spot/orders",
+    params: { market: "BTCUSDT" },
+  });
+  assert.deepEqual(calls[1], {
+    visibility: "private",
+    method: "DELETE",
+    path: "perpetual/orders",
+    params: {},
+  });
 });

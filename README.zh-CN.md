@@ -87,12 +87,13 @@ Agent skill 目录，例如 `~/.claude/skills/yellow-pro/`。
 ## 工具
 
 - **行情**：`get_health`、`get_markets`、`get_ticker`、`get_orderbook`、`get_klines`、
-  `get_funding_rate`、`get_funding_rate_history`
+  `get_funding_rate`、`get_funding_rate_history`、`get_networks`、`get_transfer_assets`
 - **账户**：`get_balance`、`get_open_orders`、`get_order_history`、`get_my_trades`、
-  `get_positions`、`get_position_history`、`get_position_mode`、`get_fee_schedule`、
-  `get_funding_payments`
-- **交易**（需开启）：`place_order`、`cancel_order`、`cancel_orders`（批量）、`set_leverage`、
-  `set_position_mode`、`transfer`
+  `get_positions`、`get_position_history`、`get_position_history_detail`、
+  `get_spot_accounts`、`get_spot_account`、`get_perpetual_accounts`、`get_fee_schedule`、
+  `get_fee_tier`、`get_market_fee_rate`、`get_transaction_history`、`get_funding_payments`
+- **交易**（需开启）：`place_order`、`cancel_order`、`cancel_all_orders`、
+  `close_positions`、`set_leverage`、`transfer`
 
 市场使用原生 id：现货如 `ETHUSDT`，永续如 `BTCUSDT-PERP`。
 数量和价格都是十进制字符串。所有结果均为交易所原始 JSON。
@@ -109,6 +110,10 @@ Agent skill 目录，例如 `~/.claude/skills/yellow-pro/`。
 查询订单时会返回分类后的条件单类型，例如 `stop_limit`、`stop_loss`、
 `take_limit` 或 `take_profit`；`cancel_order` 同时接受下单时的
 `trigger_*` 和这些查询返回类型，并会为现货撤单自动规范化。
+
+列表工具使用文档规定的 cursor 分页。第一次请求不传 `cursor`，MCP 会自动发送
+`use_cursor=true`；下一页传入响应里的 `next_cursor`。`page_size` 默认 50、最大
+100；单个历史持仓的成交明细分页按文档最大支持 500。
 
 `yellow-pro` CLI 提供同样的功能——`yellow-pro --help`。
 
@@ -162,6 +167,6 @@ npm test          # 签名向量（与参考实现交叉验证）+ 工具注册
 npm run build
 ```
 
-底层协议（HMAC 规范化、端点、订单字段）遵循内部 `ccxt_cpp` 仓库中的
-CCXT 风格参考实现（`ts/src/neodax.ts`）。目前未实现的功能：EIP-191/JWT 认证、
-WebSocket 流——有需要时再添加。
+端点和请求契约以当前
+[yellow_pro API 文档](https://docs.yellow.pro/api-and-programmatic-access/overview)
+为准。目前有意未实现 EIP-191/JWT 认证和 WebSocket 流。
