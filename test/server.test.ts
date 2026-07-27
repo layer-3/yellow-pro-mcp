@@ -67,7 +67,7 @@ test("place_order exposes post-only and conditional order parameters", async () 
   ]);
   assert.equal(properties.trigger_price.type, "string");
   assert.deepEqual((properties.trigger_type as { enum: string[] }).enum, ["stop_loss", "take_profit"]);
-  assert.deepEqual((properties.direction as { enum: string[] }).enum, ["long", "short"]);
+  assert.deepEqual((properties.direction as { enum: string[] }).enum, ["long", "short", "both"]);
   assert.equal(properties.client_order_id.type, "string");
 });
 

@@ -40,7 +40,7 @@ Account:
 Trading:
   yellow-pro place <spot|perp> <market> <buy|sell> <limit|market|post_only|trigger_limit|trigger_market> <amount> [price]
       [--trigger-price P] [--trigger-type stop_loss|take_profit] [--client-order-id ID]
-      [--tif gtc|ioc|fok] [--reduce-only] [--leverage L] [--direction long|short]
+      [--tif gtc|ioc|fok] [--reduce-only] [--leverage L] [--direction long|short|both]
   yellow-pro cancel <spot|perp> <market> <order_uuid> [--order-type TYPE]
   yellow-pro cancel-all <spot|perp> [--market M]
   yellow-pro close-positions [--market M]

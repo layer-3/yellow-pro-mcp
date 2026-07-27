@@ -59,6 +59,14 @@ test("perp single order shape matches reference", async () => {
   assert.equal(body.price, "52000");
 });
 
+test("perp one-way orders pass direction both through unchanged", async () => {
+  const { client, calls } = stubClient();
+  await api.placeOrder(client, "perp", {
+    market: "BTCUSDT-PERP", side: "buy", order_type: "market", amount: "0.001", direction: "both",
+  });
+  assert.equal(calls[0].params.direction, "both");
+});
+
 test("spot and perp post-only orders preserve the exchange order type", async () => {
   const { client, calls } = stubClient();
   await api.placeOrder(client, "spot", {

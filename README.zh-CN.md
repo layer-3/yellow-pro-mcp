@@ -106,6 +106,12 @@ Agent skill 目录，例如 `~/.claude/skills/yellow-pro/`。
 - `trigger_limit`（Stop Limit）：必须同时提供 `trigger_price` 和 `price`
 - `trigger_market`（Stop Market）：必须提供 `trigger_price`
 
+永续市场有按市场设置的**持仓模式**，可在 `get_perpetual_accounts` 返回的
+`position_modes` 中查看。`HEDGE`（双向）模式下同一市场可分别持有多头和空头，
+下单 `direction` 取 `long`/`short`（默认由 `side` 推断，`reduce_only` 时反向）；
+`ONE_WAY`（单向）模式下同一市场只有一个净仓位，交易所要求显式传
+`direction: "both"`，不会自动推断。切换持仓模式仅能在 yellow_pro 网页端操作。
+
 永续条件单还可传 `trigger_type`，值为 `stop_loss` 或 `take_profit`。
 查询订单时会返回分类后的条件单类型，例如 `stop_limit`、`stop_loss`、
 `take_limit` 或 `take_profit`；`cancel_order` 同时接受下单时的

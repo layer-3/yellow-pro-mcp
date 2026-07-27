@@ -21,7 +21,7 @@ export interface OrderInput {
   readonly time_in_force?: string;
   readonly reduce_only?: boolean;
   readonly leverage?: string;
-  readonly direction?: "long" | "short";
+  readonly direction?: "long" | "short" | "both";
   readonly client_order_id?: string;
 }
 

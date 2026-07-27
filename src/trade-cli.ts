@@ -170,7 +170,7 @@ async function run(): Promise<unknown> {
         leverage: values.leverage,
         direction: values.direction === undefined
           ? undefined
-          : oneOf(values.direction, "direction", ["long", "short"] as const),
+          : oneOf(values.direction, "direction", ["long", "short", "both"] as const),
         client_order_id: values["client-order-id"],
       };
       return api.placeOrder(client, asMarketType(args[0]), order);

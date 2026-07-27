@@ -110,6 +110,14 @@ Amounts and prices are decimal strings. All results are raw exchange JSON.
 - `trigger_limit` (Stop Limit): requires both `trigger_price` and `price`
 - `trigger_market` (Stop Market): requires `trigger_price`
 
+Perpetual markets have a per-market **position mode**, listed under
+`position_modes` in `get_perpetual_accounts`. In `HEDGE` mode a market holds
+separate long and short legs and orders take `direction` `long`/`short`
+(defaulting from `side`, flipped by `reduce_only`). In `ONE_WAY` mode a market
+holds a single net position and the exchange requires `direction: "both"` —
+pass it explicitly, it is never inferred. Switching modes is only available in
+the yellow_pro web UI.
+
 Perpetual trigger orders also accept the optional `trigger_type` value
 `stop_loss` or `take_profit`. Order queries return the classified conditional
 type, such as `stop_limit`, `stop_loss`, `take_limit`, or `take_profit`.

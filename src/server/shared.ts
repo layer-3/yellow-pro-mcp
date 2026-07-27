@@ -34,8 +34,11 @@ export const orderItem = {
     .describe("gtc/ioc/fok; default gtc for limit-style orders, ioc for market-style orders"),
   reduce_only: z.boolean().optional(),
   leverage: z.string().optional().describe("perp only, decimal string, default '1'"),
-  direction: z.enum(["long", "short"]).optional()
-    .describe("perp only; position leg, defaults from side (reduce_only flips it)"),
+  direction: z.enum(["long", "short", "both"]).optional()
+    .describe(
+      "perp only; position leg. HEDGE-mode markets use long/short (defaults from side; reduce_only flips it); " +
+      "ONE_WAY-mode markets require 'both'. Market modes are listed under position_modes in get_perpetual_accounts",
+    ),
   client_order_id: z.string().optional().describe("perp only; client-supplied order id"),
 };
 
