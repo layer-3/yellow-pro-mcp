@@ -6,7 +6,7 @@ import { test } from "node:test";
 import { clientFromEnv } from "../src/client.js";
 import { writeCredentials } from "../src/credentials.js";
 
-test("sandbox mode selects staging URL unless base URL is explicit", async () => {
+test("base URL override selects an explicit test endpoint", async () => {
   const originalFetch = globalThis.fetch;
   const urls: string[] = [];
   globalThis.fetch = async (input) => {
@@ -16,7 +16,7 @@ test("sandbox mode selects staging URL unless base URL is explicit", async () =>
 
   try {
     await clientFromEnv({
-      YELLOW_PRO_SANDBOX: "true",
+      YELLOW_PRO_BASE_URL: "https://test.example",
       YELLOW_PRO_RATE_LIMIT_MS: "0",
     }).public("GET", "health");
     await clientFromEnv({
@@ -29,7 +29,7 @@ test("sandbox mode selects staging URL unless base URL is explicit", async () =>
   }
 
   assert.deepEqual(urls, [
-    "https://api.staging.yellow.pro.neodax.app/health",
+    "https://test.example/health",
     "https://override.example/health",
   ]);
 });
@@ -39,7 +39,7 @@ test("stored UAT credentials are used when environment credentials are absent", 
   const path = join(directory, "config.json");
   writeCredentials({
     version: 1,
-    environment: "uat",
+    apiUrl: "https://api.uat.yellow.pro.neodax.app",
     keyId: "key-id",
     apiKey: "stored-key",
     apiSecret: "stored-secret",
@@ -68,7 +68,7 @@ test("complete environment credentials do not inherit the stored environment", a
   const path = join(directory, "config.json");
   writeCredentials({
     version: 1,
-    environment: "uat",
+    apiUrl: "https://api.uat.yellow.pro.neodax.app",
     keyId: "key-id",
     apiKey: "stored-key",
     apiSecret: "stored-secret",

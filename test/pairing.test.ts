@@ -22,9 +22,15 @@ test("redeems a UAT pairing code into stored credentials", async () => {
     }), { status: 200, headers: { "Content-Type": "application/json" } });
   };
 
-  assert.deepEqual(await redeemPairingCode(code, "uat", "claude-code", fetcher), {
+  assert.deepEqual(await redeemPairingCode(
+    code,
+    "https://auth.uat.yellow.pro.neodax.app",
+    "https://api.uat.yellow.pro.neodax.app",
+    "claude-code",
+    fetcher,
+  ), {
     version: 1,
-    environment: "uat",
+    apiUrl: "https://api.uat.yellow.pro.neodax.app",
     keyId: "key-id",
     apiKey: "api-key",
     apiSecret: "api-secret",
@@ -40,7 +46,7 @@ test("pairing errors expose only the stable error code", async () => {
     { status: 409, headers: { "Content-Type": "application/json" } },
   );
   await assert.rejects(
-    redeemPairingCode(code, "uat", "claude-code", fetcher),
+    redeemPairingCode(code, "https://auth.example", "https://api.example", "claude-code", fetcher),
     /pairing failed: pairing_code_consumed/,
   );
 });
@@ -58,7 +64,7 @@ test("pairing rejects inactive credentials", async () => {
     secret: "api-secret",
   }), { status: 200, headers: { "Content-Type": "application/json" } });
   await assert.rejects(
-    redeemPairingCode(code, "uat", "claude-code", fetcher),
+    redeemPairingCode(code, "https://auth.example", "https://api.example", "claude-code", fetcher),
     /invalid credential response/,
   );
 });

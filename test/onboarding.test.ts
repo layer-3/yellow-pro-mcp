@@ -38,7 +38,8 @@ test("connect stores credentials, verifies, and registers Claude without secrets
     const result = await connect({
       code,
       client: "claude-code",
-      environment: "uat",
+      authUrl: "https://auth.uat.yellow.pro.neodax.app",
+      apiUrl: "https://api.uat.yellow.pro.neodax.app",
       replace: false,
       path,
       fetcher,
@@ -66,7 +67,7 @@ test("failed verification preserves existing credentials during replacement", as
   const path = join(directory, "config.json");
   writeCredentials({
     version: 1,
-    environment: "uat",
+    apiUrl: "https://api.uat.yellow.pro.neodax.app",
     keyId: "old-id",
     apiKey: "old-key",
     apiSecret: "old-secret",
@@ -95,7 +96,8 @@ test("failed verification preserves existing credentials during replacement", as
     await assert.rejects(connect({
       code,
       client: "claude-code",
-      environment: "uat",
+      authUrl: "https://auth.uat.yellow.pro.neodax.app",
+      apiUrl: "https://api.uat.yellow.pro.neodax.app",
       replace: true,
       path,
       fetcher,

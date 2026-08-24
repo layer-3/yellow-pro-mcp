@@ -4,11 +4,17 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 
-import { deleteCredentials, readCredentials, writeCredentials, type StoredCredentials } from "../src/credentials.js";
+import {
+  connectionUrls,
+  deleteCredentials,
+  readCredentials,
+  writeCredentials,
+  type StoredCredentials,
+} from "../src/credentials.js";
 
 const credential: StoredCredentials = {
   version: 1,
-  environment: "uat",
+  apiUrl: "https://api.uat.example",
   keyId: "key-id",
   apiKey: "api-key",
   apiSecret: "api-secret",
@@ -51,4 +57,20 @@ test("credentials reject an insecure existing directory", { skip: process.platfo
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }
+});
+
+test("test endpoint overrides require a complete HTTPS pair", () => {
+  assert.deepEqual(connectionUrls(), {
+    authUrl: "https://auth.api.yellow.pro",
+    apiUrl: "https://trade.api.yellow.pro",
+  });
+  assert.throws(() => connectionUrls("https://auth.example"), /must be provided together/);
+  assert.throws(
+    () => connectionUrls("http://auth.example", "http://api.example"),
+    /must use HTTPS/,
+  );
+  assert.deepEqual(connectionUrls("http://localhost:8081", "http://127.0.0.1:8080"), {
+    authUrl: "http://localhost:8081",
+    apiUrl: "http://127.0.0.1:8080",
+  });
 });

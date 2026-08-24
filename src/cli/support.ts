@@ -48,7 +48,7 @@ Trading:
   yellow-pro transfer <asset> <amount> <spot|perps> <spot|perps>
 
 Setup:
-  yellow-pro connect <pairing-code> [--client claude-code] [--environment production|staging|uat] [--replace]
+  yellow-pro connect <pairing-code> [--client claude-code] [--auth-url URL --api-url URL] [--replace]
   yellow-pro status
   yellow-pro disconnect
   yellow-pro setup claude-code|codex|openclaw|hermes|json

@@ -14,11 +14,9 @@ import { dirname, join } from "node:path";
 
 import { YellowProError } from "./errors.js";
 
-export type YellowProEnvironment = "production" | "staging" | "uat";
-
 export interface StoredCredentials {
   version: 1;
-  environment: YellowProEnvironment;
+  apiUrl: string;
   keyId: string;
   apiKey: string;
   apiSecret: string;
@@ -27,31 +25,38 @@ export interface StoredCredentials {
   client: string;
 }
 
-export const ENVIRONMENTS: Record<YellowProEnvironment, { authUrl: string; apiUrl: string }> = {
-  production: {
-    authUrl: "https://auth.api.yellow.pro",
-    apiUrl: "https://trade.api.yellow.pro",
-  },
-  staging: {
-    authUrl: "https://auth.staging.yellow.pro.neodax.app",
-    apiUrl: "https://api.staging.yellow.pro.neodax.app",
-  },
-  uat: {
-    authUrl: "https://auth.uat.yellow.pro.neodax.app",
-    apiUrl: "https://api.uat.yellow.pro.neodax.app",
-  },
-};
+export const PRODUCTION_AUTH_URL = "https://auth.api.yellow.pro";
+export const PRODUCTION_API_URL = "https://trade.api.yellow.pro";
 
 export function credentialsPath(env: NodeJS.ProcessEnv = process.env): string {
   return env.YELLOW_PRO_CONFIG_PATH ?? join(homedir(), ".yellow", "config.json");
 }
 
-export function parseEnvironment(value: string | undefined): YellowProEnvironment {
-  const environment = value ?? "production";
-  if (environment !== "production" && environment !== "staging" && environment !== "uat") {
-    throw new YellowProError("environment must be production, staging, or uat");
+export function validateServiceUrl(value: string, name: string): string {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new YellowProError(`${name} must be a valid URL`);
   }
-  return environment;
+  const local = url.hostname === "localhost" || url.hostname === "127.0.0.1";
+  if (url.protocol !== "https:" && !(local && url.protocol === "http:")) {
+    throw new YellowProError(`${name} must use HTTPS, except for localhost testing`);
+  }
+  if (url.username || url.password || url.search || url.hash || (url.pathname !== "" && url.pathname !== "/")) {
+    throw new YellowProError(`${name} must be an origin without credentials, path, query, or fragment`);
+  }
+  return url.origin;
+}
+
+export function connectionUrls(authUrl?: string, apiUrl?: string): { authUrl: string; apiUrl: string } {
+  if ((authUrl === undefined) !== (apiUrl === undefined)) {
+    throw new YellowProError("--auth-url and --api-url must be provided together");
+  }
+  return {
+    authUrl: validateServiceUrl(authUrl ?? PRODUCTION_AUTH_URL, "auth URL"),
+    apiUrl: validateServiceUrl(apiUrl ?? PRODUCTION_API_URL, "API URL"),
+  };
 }
 
 function validateCredentials(value: unknown): StoredCredentials {
@@ -59,10 +64,10 @@ function validateCredentials(value: unknown): StoredCredentials {
     throw new YellowProError("invalid Yellow Pro credential file");
   }
   const record = value as Record<string, unknown>;
-  if (typeof record.environment !== "string") {
-    throw new YellowProError("invalid Yellow Pro credential file: missing environment");
+  if (typeof record.apiUrl !== "string") {
+    throw new YellowProError("invalid Yellow Pro credential file: missing apiUrl");
   }
-  const environment = parseEnvironment(record.environment);
+  const apiUrl = validateServiceUrl(record.apiUrl, "stored API URL");
   const required = ["keyId", "apiKey", "apiSecret", "appSessionId", "client"] as const;
   for (const key of required) {
     if (typeof record[key] !== "string" || record[key] === "") {
@@ -74,7 +79,7 @@ function validateCredentials(value: unknown): StoredCredentials {
   }
   return {
     version: 1,
-    environment,
+    apiUrl,
     keyId: record.keyId as string,
     apiKey: record.apiKey as string,
     apiSecret: record.apiSecret as string,

@@ -1,12 +1,10 @@
 import { setup, type SetupRunner } from "./cli/support.js";
 import {
   credentialsPath,
+  connectionUrls,
   deleteCredentials,
-  ENVIRONMENTS,
-  parseEnvironment,
   readCredentials,
   writeCredentials,
-  type YellowProEnvironment,
 } from "./credentials.js";
 import { YellowProClient, YellowProError } from "./client.js";
 import { redeemPairingCode } from "./pairing.js";
@@ -14,7 +12,8 @@ import { redeemPairingCode } from "./pairing.js";
 export interface ConnectOptions {
   code: string;
   client: string;
-  environment: YellowProEnvironment;
+  authUrl?: string;
+  apiUrl?: string;
   replace: boolean;
   path?: string;
   fetcher?: typeof fetch;
@@ -25,10 +24,10 @@ async function verifyCredential(
   apiKey: string,
   apiSecret: string,
   appSessionId: string,
-  environment: YellowProEnvironment,
+  apiUrl: string,
 ): Promise<void> {
   const client = new YellowProClient({
-    baseUrl: ENVIRONMENTS[environment].apiUrl,
+    baseUrl: apiUrl,
     apiKey,
     apiSecret,
     appSessionId,
@@ -39,6 +38,7 @@ async function verifyCredential(
 
 export async function connect(options: ConnectOptions): Promise<Record<string, unknown>> {
   const path = options.path ?? credentialsPath();
+  const urls = connectionUrls(options.authUrl, options.apiUrl);
   if (options.client !== "claude-code") {
     throw new YellowProError("pairing onboarding currently supports only claude-code");
   }
@@ -47,7 +47,8 @@ export async function connect(options: ConnectOptions): Promise<Record<string, u
   }
   const credential = await redeemPairingCode(
     options.code,
-    options.environment,
+    urls.authUrl,
+    urls.apiUrl,
     options.client,
     options.fetcher,
   );
@@ -55,7 +56,7 @@ export async function connect(options: ConnectOptions): Promise<Record<string, u
     credential.apiKey,
     credential.apiSecret,
     credential.appSessionId,
-    credential.environment,
+    credential.apiUrl,
   );
   writeCredentials(credential, path, options.replace);
   try {
@@ -72,7 +73,7 @@ export async function connect(options: ConnectOptions): Promise<Record<string, u
   return {
     connected: true,
     client: credential.client,
-    environment: credential.environment,
+    api_url: credential.apiUrl,
     account_type: "primary",
     scopes: credential.scopes,
     credential_path: path,
@@ -90,12 +91,12 @@ export async function connectionStatus(path = credentialsPath()): Promise<Record
     credential.apiKey,
     credential.apiSecret,
     credential.appSessionId,
-    credential.environment,
+    credential.apiUrl,
   );
   return {
     configured: true,
     client: credential.client,
-    environment: credential.environment,
+    api_url: credential.apiUrl,
     account_type: "primary",
     scopes: credential.scopes,
     credential_path: path,
@@ -109,8 +110,4 @@ export function disconnect(path = credentialsPath()): Record<string, unknown> {
     credential_path: path,
     remote_key_revoked: false,
   };
-}
-
-export function environmentOption(value: string | undefined): YellowProEnvironment {
-  return parseEnvironment(value);
 }

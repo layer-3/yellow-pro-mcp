@@ -2,7 +2,7 @@
 import { parseArgs } from "node:util";
 import { api, type OrderInput } from "./api.js";
 import { clientFromEnv, YellowProError } from "./client.js";
-import { connect, connectionStatus, disconnect, environmentOption } from "./onboarding.js";
+import { connect, connectionStatus, disconnect } from "./onboarding.js";
 import {
   asMarketType,
   num,
@@ -48,7 +48,8 @@ async function run(): Promise<unknown> {
       "client-order-id": { type: "string" },
       code: { type: "string" },
       client: { type: "string" },
-      environment: { type: "string" },
+      "auth-url": { type: "string" },
+      "api-url": { type: "string" },
       replace: { type: "boolean" },
       help: { type: "boolean", short: "h" },
       version: { type: "boolean", short: "v" },
@@ -65,7 +66,8 @@ async function run(): Promise<unknown> {
     return connect({
       code: req(values.code ?? args[0], "pairing-code"),
       client: values.client ?? "claude-code",
-      environment: environmentOption(values.environment),
+      authUrl: values["auth-url"],
+      apiUrl: values["api-url"],
       replace: values.replace ?? false,
     });
   }

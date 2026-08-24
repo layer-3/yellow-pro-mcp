@@ -1,4 +1,4 @@
-import { ENVIRONMENTS, type StoredCredentials, type YellowProEnvironment } from "./credentials.js";
+import { type StoredCredentials, validateServiceUrl } from "./credentials.js";
 import { YellowProError } from "./errors.js";
 
 interface PairingKeyResponse {
@@ -15,7 +15,7 @@ interface PairingResponse {
   secret: string;
 }
 
-function parsePairingResponse(value: unknown, environment: YellowProEnvironment, client: string): StoredCredentials {
+function parsePairingResponse(value: unknown, apiUrl: string, client: string): StoredCredentials {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     throw new YellowProError("pairing returned an invalid response");
   }
@@ -33,7 +33,7 @@ function parsePairingResponse(value: unknown, environment: YellowProEnvironment,
   }
   return {
     version: 1,
-    environment,
+    apiUrl: validateServiceUrl(apiUrl, "API URL"),
     keyId: key.id,
     apiKey: key.api_key,
     apiSecret: response.secret,
@@ -45,7 +45,8 @@ function parsePairingResponse(value: unknown, environment: YellowProEnvironment,
 
 export async function redeemPairingCode(
   code: string,
-  environment: YellowProEnvironment,
+  authUrl: string,
+  apiUrl: string,
   client: string,
   fetcher: typeof fetch = fetch,
 ): Promise<StoredCredentials> {
@@ -54,7 +55,7 @@ export async function redeemPairingCode(
   }
   let response: Response;
   try {
-    response = await fetcher(`${ENVIRONMENTS[environment].authUrl}/agent/pairing-codes/redeem`, {
+    response = await fetcher(`${validateServiceUrl(authUrl, "auth URL")}/agent/pairing-codes/redeem`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ pairing_code: code }),
@@ -81,5 +82,5 @@ export async function redeemPairingCode(
   } catch {
     throw new YellowProError("pairing returned a non-JSON response");
   }
-  return parsePairingResponse(body, environment, client);
+  return parsePairingResponse(body, apiUrl, client);
 }

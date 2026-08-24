@@ -18,7 +18,7 @@ Pairing lets a Yellow Pro user connect Claude Code without copying an API key or
 secret. Generate a short-lived pairing code in Yellow Pro, then run:
 
 ```bash
-yellow-pro connect yp_pair_... --client claude-code --environment uat
+yellow-pro connect yp_pair_... --client claude-code
 ```
 
 The command:
@@ -43,6 +43,15 @@ yellow-pro disconnect
 Local disconnect does not revoke the remote API key. Revoke it in Yellow Pro.
 The preview currently supports Claude Code and read-only primary-account credentials.
 Use `--replace` to replace an existing local connection.
+
+Production endpoints are built in. For UAT or another test deployment, provide
+both service origins explicitly:
+
+```bash
+yellow-pro connect yp_pair_... --client claude-code \
+  --auth-url https://auth.uat.yellow.pro.neodax.app \
+  --api-url https://api.uat.yellow.pro.neodax.app
+```
 
 ## One-liner install (for agents and humans)
 
@@ -107,8 +116,8 @@ into your agent's skills directory (e.g. `~/.claude/skills/yellow-pro/`).
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `YELLOW_PRO_BASE_URL` | no | selected by `YELLOW_PRO_SANDBOX` | Explicit REST base URL override |
-| `YELLOW_PRO_SANDBOX` | no | `false` | Exactly `true` uses staging (`https://api.staging.yellow.pro.neodax.app`); otherwise production (`https://trade.api.yellow.pro`) |
+| `YELLOW_PRO_BASE_URL` | no | production API | Explicit REST base URL override for testing |
+| `YELLOW_PRO_SANDBOX` | no | `false` | When `true`, requires an explicit `YELLOW_PRO_BASE_URL` |
 | `YELLOW_PRO_API_KEY` | private tools | — | API key |
 | `YELLOW_PRO_API_SECRET` | private tools | — | API secret (HMAC-SHA256) |
 | `YELLOW_PRO_APP_SESSION_ID` | private tools | — | app session id (`uid` credential) |

@@ -10,11 +10,10 @@
  */
 import { createHmac } from "node:crypto";
 
-import { credentialsPath, ENVIRONMENTS, readCredentials } from "./credentials.js";
+import { credentialsPath, PRODUCTION_API_URL, readCredentials } from "./credentials.js";
 import { YellowProError } from "./errors.js";
 
-export const DEFAULT_BASE_URL = ENVIRONMENTS.production.apiUrl;
-export const SANDBOX_BASE_URL = ENVIRONMENTS.staging.apiUrl;
+export const DEFAULT_BASE_URL = PRODUCTION_API_URL;
 
 export type Params = Record<string, unknown>;
 
@@ -74,6 +73,9 @@ export interface ClientOptions {
 export function clientFromEnv(env: NodeJS.ProcessEnv = process.env): YellowProClient {
   const gap = Number(env.YELLOW_PRO_RATE_LIMIT_MS);
   const sandbox = (env.YELLOW_PRO_SANDBOX ?? "").toLowerCase() === "true";
+  if (sandbox && !env.YELLOW_PRO_BASE_URL) {
+    throw new YellowProError("YELLOW_PRO_SANDBOX requires an explicit YELLOW_PRO_BASE_URL");
+  }
   const environmentCredentials = [
     env.YELLOW_PRO_API_KEY,
     env.YELLOW_PRO_API_SECRET,
@@ -86,8 +88,8 @@ export function clientFromEnv(env: NodeJS.ProcessEnv = process.env): YellowProCl
   const useEnvironmentCredentials = environmentCredentialCount === 3;
   const stored = useEnvironmentCredentials ? undefined : readCredentials(credentialsPath(env));
   const selectedBaseUrl = stored
-    ? ENVIRONMENTS[stored.environment].apiUrl
-    : (sandbox ? SANDBOX_BASE_URL : DEFAULT_BASE_URL);
+    ? stored.apiUrl
+    : DEFAULT_BASE_URL;
   return new YellowProClient({
     baseUrl: stored ? selectedBaseUrl : (env.YELLOW_PRO_BASE_URL ?? selectedBaseUrl),
     apiKey: useEnvironmentCredentials ? env.YELLOW_PRO_API_KEY : stored?.apiKey,
