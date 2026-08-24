@@ -48,6 +48,9 @@ Trading:
   yellow-pro transfer <asset> <amount> <spot|perps> <spot|perps>
 
 Setup:
+  yellow-pro connect <pairing-code> [--client claude-code] [--environment production|staging|uat] [--replace]
+  yellow-pro status
+  yellow-pro disconnect
   yellow-pro setup claude-code|codex|openclaw|hermes|json
 
 Env: YELLOW_PRO_BASE_URL, YELLOW_PRO_SANDBOX, YELLOW_PRO_API_KEY, YELLOW_PRO_API_SECRET,
@@ -63,6 +66,7 @@ const ENV_KEYS = [
   "YELLOW_PRO_ENABLE_TRADING",
   "YELLOW_PRO_MODULES",
   "YELLOW_PRO_RATE_LIMIT_MS",
+  "YELLOW_PRO_CONFIG_PATH",
 ];
 
 export function tradingEnabled(): void {
@@ -104,6 +108,8 @@ export function num(value: string | undefined): number | undefined {
   return parsed;
 }
 
+export type SetupRunner = (bin: string, args: string[], input?: string) => void;
+
 function runSetupCommand(bin: string, args: string[], input?: string): void {
   const stdio: ("pipe" | "inherit")[] = input === undefined
     ? ["inherit", "inherit", "inherit"]
@@ -114,12 +120,22 @@ function runSetupCommand(bin: string, args: string[], input?: string): void {
   }
 }
 
-export function setup(target: string | undefined): string {
+export interface SetupOptions {
+  env?: NodeJS.ProcessEnv;
+  includeEnvironment?: boolean;
+  additionalEnvironment?: Record<string, string>;
+  runner?: SetupRunner;
+}
+
+export function setup(target: string | undefined, options: SetupOptions = {}): string {
   const command = "yellow-pro-mcp";
-  const envPresent = ENV_KEYS.filter((key) => process.env[key]);
-  const env: Record<string, string> = {};
+  const sourceEnv = options.env ?? process.env;
+  const includeEnvironment = options.includeEnvironment ?? true;
+  const runner = options.runner ?? runSetupCommand;
+  const envPresent = includeEnvironment ? ENV_KEYS.filter((key) => sourceEnv[key]) : [];
+  const env: Record<string, string> = { ...(options.additionalEnvironment ?? {}) };
   for (const key of envPresent) {
-    const value = process.env[key];
+    const value = sourceEnv[key];
     if (value !== undefined) {
       env[key] = value;
     }
@@ -127,17 +143,17 @@ export function setup(target: string | undefined): string {
   switch (target) {
     case "claude":
     case "claude-code": {
-      const flags = envPresent.flatMap((key) => ["-e", `${key}=${process.env[key]}`]);
-      runSetupCommand("claude", ["mcp", "add", "yellow_pro", "-s", "user", ...flags, "--", command]);
+      const flags = Object.entries(env).flatMap(([key, value]) => ["-e", `${key}=${value}`]);
+      runner("claude", ["mcp", "add", "yellow_pro", "-s", "user", ...flags, "--", command]);
       return "yellow_pro MCP server registered with Claude Code";
     }
     case "codex": {
-      const flags = envPresent.flatMap((key) => ["--env", `${key}=${process.env[key]}`]);
+      const flags = Object.entries(env).flatMap(([key, value]) => ["--env", `${key}=${value}`]);
       try {
-        runSetupCommand("codex", ["mcp", "add", "yellow_pro", ...flags, "--", command]);
+        runner("codex", ["mcp", "add", "yellow_pro", ...flags, "--", command]);
         return "yellow_pro MCP server registered with Codex CLI";
       } catch {
-        const envToml = envPresent.map((key) => `${key} = "${process.env[key]}"`).join(", ");
+        const envToml = envPresent.map((key) => `${key} = "${sourceEnv[key]}"`).join(", ");
         return `[mcp_servers.yellow_pro]\ncommand = "${command}"\nenv = { ${envToml} }`;
       }
     }
@@ -156,10 +172,10 @@ export function setup(target: string | undefined): string {
     }
     case "hermes":
       try {
-        runSetupCommand("hermes", ["mcp", "add", "yellow_pro", "--command", command], "y\n");
+        runner("hermes", ["mcp", "add", "yellow_pro", "--command", command], "y\n");
         return "yellow_pro MCP server registered with Hermes";
       } catch {
-        const envYaml = envPresent.map((key) => `      ${key}: "${process.env[key]}"`).join("\n");
+        const envYaml = envPresent.map((key) => `      ${key}: "${sourceEnv[key]}"`).join("\n");
         return `mcp_servers:\n  yellow_pro:\n    command: ${command}\n    env:\n${envYaml}`;
       }
     case "json":

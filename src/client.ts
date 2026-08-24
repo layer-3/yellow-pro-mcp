@@ -10,8 +10,11 @@
  */
 import { createHmac } from "node:crypto";
 
-export const DEFAULT_BASE_URL = "https://trade.api.yellow.pro";
-export const SANDBOX_BASE_URL = "https://api.staging.yellow.pro.neodax.app";
+import { credentialsPath, ENVIRONMENTS, readCredentials } from "./credentials.js";
+import { YellowProError } from "./errors.js";
+
+export const DEFAULT_BASE_URL = ENVIRONMENTS.production.apiUrl;
+export const SANDBOX_BASE_URL = ENVIRONMENTS.staging.apiUrl;
 
 export type Params = Record<string, unknown>;
 
@@ -57,7 +60,7 @@ export function sign(secret: string, method: string, path: string, timestamp: st
   return createHmac("sha256", secret).update(payload).digest("hex");
 }
 
-export class YellowProError extends Error {}
+export { YellowProError } from "./errors.js";
 
 export interface ClientOptions {
   baseUrl?: string;
@@ -71,11 +74,25 @@ export interface ClientOptions {
 export function clientFromEnv(env: NodeJS.ProcessEnv = process.env): YellowProClient {
   const gap = Number(env.YELLOW_PRO_RATE_LIMIT_MS);
   const sandbox = (env.YELLOW_PRO_SANDBOX ?? "").toLowerCase() === "true";
+  const environmentCredentials = [
+    env.YELLOW_PRO_API_KEY,
+    env.YELLOW_PRO_API_SECRET,
+    env.YELLOW_PRO_APP_SESSION_ID,
+  ];
+  const environmentCredentialCount = environmentCredentials.filter((value) => value !== undefined && value !== "").length;
+  if (environmentCredentialCount > 0 && environmentCredentialCount < 3) {
+    throw new YellowProError("set all of YELLOW_PRO_API_KEY, YELLOW_PRO_API_SECRET, and YELLOW_PRO_APP_SESSION_ID");
+  }
+  const useEnvironmentCredentials = environmentCredentialCount === 3;
+  const stored = useEnvironmentCredentials ? undefined : readCredentials(credentialsPath(env));
+  const selectedBaseUrl = stored
+    ? ENVIRONMENTS[stored.environment].apiUrl
+    : (sandbox ? SANDBOX_BASE_URL : DEFAULT_BASE_URL);
   return new YellowProClient({
-    baseUrl: env.YELLOW_PRO_BASE_URL ?? (sandbox ? SANDBOX_BASE_URL : undefined),
-    apiKey: env.YELLOW_PRO_API_KEY,
-    apiSecret: env.YELLOW_PRO_API_SECRET,
-    appSessionId: env.YELLOW_PRO_APP_SESSION_ID,
+    baseUrl: stored ? selectedBaseUrl : (env.YELLOW_PRO_BASE_URL ?? selectedBaseUrl),
+    apiKey: useEnvironmentCredentials ? env.YELLOW_PRO_API_KEY : stored?.apiKey,
+    apiSecret: useEnvironmentCredentials ? env.YELLOW_PRO_API_SECRET : stored?.apiSecret,
+    appSessionId: useEnvironmentCredentials ? env.YELLOW_PRO_APP_SESSION_ID : stored?.appSessionId,
     minRequestGapMs: Number.isFinite(gap) && gap >= 0 ? gap : undefined,
   });
 }

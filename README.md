@@ -12,6 +12,38 @@ variables or your MCP client's local config — never sent anywhere else),
 **read-only by default**, module filtering, built-in rate limiting, plus a CLI
 and an agent skill file for non-MCP agents.
 
+## Pairing onboarding preview
+
+Pairing lets a Yellow Pro user connect Claude Code without copying an API key or
+secret. Generate a short-lived pairing code in Yellow Pro, then run:
+
+```bash
+yellow-pro connect yp_pair_... --client claude-code --environment uat
+```
+
+The command:
+
+1. Redeems the one-time code through Yellow Pro Auth.
+2. Verifies the returned read-only credential against the trading API.
+3. Stores it in `~/.yellow/config.json` with owner-only permissions.
+4. Registers `yellow-pro-mcp` in Claude Code without putting secrets in Claude's config.
+
+Restart Claude Code after setup, then check the connection at any time:
+
+```bash
+yellow-pro status
+```
+
+Remove the local credential with:
+
+```bash
+yellow-pro disconnect
+```
+
+Local disconnect does not revoke the remote API key. Revoke it in Yellow Pro.
+The preview currently supports Claude Code and read-only primary-account credentials.
+Use `--replace` to replace an existing local connection.
+
 ## One-liner install (for agents and humans)
 
 Install from GitHub and register with Claude Code:
