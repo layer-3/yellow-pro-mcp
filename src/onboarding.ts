@@ -4,6 +4,7 @@ import {
   connectionUrls,
   deleteCredentials,
   readCredentials,
+  validateProfile,
   writeCredentials,
 } from "./credentials.js";
 import { YellowProClient, YellowProError } from "./client.js";
@@ -12,6 +13,7 @@ import { redeemPairingCode } from "./pairing.js";
 export interface ConnectOptions {
   code: string;
   client: string;
+  profile?: string;
   authUrl?: string;
   apiUrl?: string;
   replace: boolean;
@@ -37,7 +39,8 @@ async function verifyCredential(
 }
 
 export async function connect(options: ConnectOptions): Promise<Record<string, unknown>> {
-  const path = options.path ?? credentialsPath();
+  const profile = validateProfile(options.profile ?? options.client);
+  const path = options.path ?? credentialsPath(process.env, profile);
   const urls = connectionUrls(options.authUrl, options.apiUrl);
   if (options.client !== "claude-code" && options.client !== "codex") {
     throw new YellowProError("pairing onboarding currently supports only claude-code and codex");
@@ -62,18 +65,21 @@ export async function connect(options: ConnectOptions): Promise<Record<string, u
   try {
     setup(options.client, {
       includeEnvironment: false,
-      additionalEnvironment: { YELLOW_PRO_CONFIG_PATH: path },
+      additionalEnvironment: options.path
+        ? { YELLOW_PRO_CONFIG_PATH: path }
+        : { YELLOW_PRO_PROFILE: profile },
       allowFallback: false,
       runner: options.setupRunner,
     });
   } catch {
     throw new YellowProError(
-      `credentials were stored at ${path}, but ${options.client} registration failed; run yellow-pro setup ${options.client}`,
+      `credentials were stored at ${path}, but ${options.client} registration failed; run YELLOW_PRO_PROFILE=${profile} yellow-pro setup ${options.client}`,
     );
   }
   return {
     connected: true,
     client: credential.client,
+    profile,
     api_url: credential.apiUrl,
     account_type: "primary",
     scopes: credential.scopes,
@@ -83,10 +89,12 @@ export async function connect(options: ConnectOptions): Promise<Record<string, u
   };
 }
 
-export async function connectionStatus(path = credentialsPath()): Promise<Record<string, unknown>> {
-  const credential = readCredentials(path);
+export async function connectionStatus(profile?: string, path?: string): Promise<Record<string, unknown>> {
+  const selectedProfile = profile ? validateProfile(profile) : undefined;
+  const credentialPath = path ?? credentialsPath(process.env, selectedProfile);
+  const credential = readCredentials(credentialPath);
   if (!credential) {
-    return { configured: false, credential_path: path };
+    return { configured: false, profile: selectedProfile, credential_path: credentialPath };
   }
   await verifyCredential(
     credential.apiKey,
@@ -96,19 +104,23 @@ export async function connectionStatus(path = credentialsPath()): Promise<Record
   );
   return {
     configured: true,
+    profile: selectedProfile,
     client: credential.client,
     api_url: credential.apiUrl,
     account_type: "primary",
     scopes: credential.scopes,
-    credential_path: path,
+    credential_path: credentialPath,
     authentication: "valid",
   };
 }
 
-export function disconnect(path = credentialsPath()): Record<string, unknown> {
+export function disconnect(profile?: string, path?: string): Record<string, unknown> {
+  const selectedProfile = profile ? validateProfile(profile) : undefined;
+  const credentialPath = path ?? credentialsPath(process.env, selectedProfile);
   return {
-    disconnected: deleteCredentials(path),
-    credential_path: path,
+    disconnected: deleteCredentials(credentialPath),
+    profile: selectedProfile,
+    credential_path: credentialPath,
     remote_key_revoked: false,
   };
 }

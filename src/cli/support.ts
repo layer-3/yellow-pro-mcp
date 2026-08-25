@@ -48,9 +48,9 @@ Trading:
   yellow-pro transfer <asset> <amount> <spot|perps> <spot|perps>
 
 Setup:
-  yellow-pro connect <pairing-code> [--client claude-code] [--auth-url URL --api-url URL] [--replace]
-  yellow-pro status
-  yellow-pro disconnect
+  yellow-pro connect <pairing-code> [--client claude-code] [--profile NAME] [--auth-url URL --api-url URL] [--replace]
+  yellow-pro status [--profile NAME]
+  yellow-pro disconnect [--profile NAME]
   yellow-pro setup claude-code|codex|openclaw|hermes|json
 
 Env: YELLOW_PRO_BASE_URL, YELLOW_PRO_SANDBOX, YELLOW_PRO_API_KEY, YELLOW_PRO_API_SECRET,

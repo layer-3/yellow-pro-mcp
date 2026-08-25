@@ -6,6 +6,7 @@ import { test } from "node:test";
 
 import {
   connectionUrls,
+  credentialsPath,
   deleteCredentials,
   readCredentials,
   writeCredentials,
@@ -73,4 +74,10 @@ test("test endpoint overrides require a complete HTTPS pair", () => {
     authUrl: "http://localhost:8081",
     apiUrl: "http://127.0.0.1:8080",
   });
+});
+
+test("profiles resolve to separate credential files", () => {
+  assert.match(credentialsPath({}, "claude-code"), /\.yellow\/connections\/claude-code\.json$/);
+  assert.match(credentialsPath({}, "codex"), /\.yellow\/connections\/codex\.json$/);
+  assert.throws(() => credentialsPath({}, "../escape"), /profile must contain/);
 });

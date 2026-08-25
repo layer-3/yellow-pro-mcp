@@ -28,8 +28,22 @@ export interface StoredCredentials {
 export const PRODUCTION_AUTH_URL = "https://auth.api.yellow.pro";
 export const PRODUCTION_API_URL = "https://trade.api.yellow.pro";
 
-export function credentialsPath(env: NodeJS.ProcessEnv = process.env): string {
-  return env.YELLOW_PRO_CONFIG_PATH ?? join(homedir(), ".yellow", "config.json");
+export function validateProfile(value: string): string {
+  if (!/^[a-z0-9][a-z0-9._-]{0,63}$/.test(value)) {
+    throw new YellowProError("profile must contain only lowercase letters, numbers, dots, dashes, or underscores");
+  }
+  return value;
+}
+
+export function credentialsPath(env: NodeJS.ProcessEnv = process.env, profile?: string): string {
+  if (env.YELLOW_PRO_CONFIG_PATH) {
+    return env.YELLOW_PRO_CONFIG_PATH;
+  }
+  const selectedProfile = profile ?? env.YELLOW_PRO_PROFILE;
+  if (selectedProfile) {
+    return join(homedir(), ".yellow", "connections", `${validateProfile(selectedProfile)}.json`);
+  }
+  return join(homedir(), ".yellow", "config.json");
 }
 
 export function validateServiceUrl(value: string, name: string): string {

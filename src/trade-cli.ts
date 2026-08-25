@@ -48,6 +48,7 @@ async function run(): Promise<unknown> {
       "client-order-id": { type: "string" },
       code: { type: "string" },
       client: { type: "string" },
+      profile: { type: "string" },
       "auth-url": { type: "string" },
       "api-url": { type: "string" },
       replace: { type: "boolean" },
@@ -66,16 +67,17 @@ async function run(): Promise<unknown> {
     return connect({
       code: req(values.code ?? args[0], "pairing-code"),
       client: values.client ?? "claude-code",
+      profile: values.profile,
       authUrl: values["auth-url"],
       apiUrl: values["api-url"],
       replace: values.replace ?? false,
     });
   }
   if (command === "status") {
-    return connectionStatus();
+    return connectionStatus(values.profile);
   }
   if (command === "disconnect") {
-    return disconnect();
+    return disconnect(values.profile);
   }
   const client = clientFromEnv();
   const cursorQuery = { cursor: values.cursor, page_size: num(values["page-size"]) };

@@ -28,16 +28,26 @@ The command:
 3. Stores it in `~/.yellow/config.json` with owner-only permissions.
 4. Registers `yellow-pro-mcp` in Claude Code without putting secrets in Claude's config.
 
+Each client uses its own named profile and credential file. The profile defaults
+to the client name:
+
+```text
+~/.yellow/connections/claude-code.json
+~/.yellow/connections/codex.json
+```
+
+Use `--profile NAME` when you need more than one connection for the same client.
+
 Restart Claude Code after setup, then check the connection at any time:
 
 ```bash
-yellow-pro status
+yellow-pro status --profile claude-code
 ```
 
 Remove the local credential with:
 
 ```bash
-yellow-pro disconnect
+yellow-pro disconnect --profile claude-code
 ```
 
 Local disconnect does not revoke the remote API key. Revoke it in Yellow Pro.
