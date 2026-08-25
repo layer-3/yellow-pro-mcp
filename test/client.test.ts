@@ -7,6 +7,8 @@ import { clientFromEnv } from "../src/client.js";
 import { writeCredentials } from "../src/credentials.js";
 
 test("base URL override selects an explicit test endpoint", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "yellow-pro-base-url-"));
+  const configPath = join(directory, "missing.json");
   const originalFetch = globalThis.fetch;
   const urls: string[] = [];
   globalThis.fetch = async (input) => {
@@ -17,15 +19,18 @@ test("base URL override selects an explicit test endpoint", async () => {
   try {
     await clientFromEnv({
       YELLOW_PRO_BASE_URL: "https://test.example",
+      YELLOW_PRO_CONFIG_PATH: configPath,
       YELLOW_PRO_RATE_LIMIT_MS: "0",
     }).public("GET", "health");
     await clientFromEnv({
       YELLOW_PRO_SANDBOX: "true",
       YELLOW_PRO_BASE_URL: "https://override.example",
+      YELLOW_PRO_CONFIG_PATH: configPath,
       YELLOW_PRO_RATE_LIMIT_MS: "0",
     }).public("GET", "health");
   } finally {
     globalThis.fetch = originalFetch;
+    rmSync(directory, { recursive: true, force: true });
   }
 
   assert.deepEqual(urls, [

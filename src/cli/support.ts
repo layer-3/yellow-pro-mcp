@@ -124,6 +124,7 @@ export interface SetupOptions {
   env?: NodeJS.ProcessEnv;
   includeEnvironment?: boolean;
   additionalEnvironment?: Record<string, string>;
+  allowFallback?: boolean;
   runner?: SetupRunner;
 }
 
@@ -131,6 +132,7 @@ export function setup(target: string | undefined, options: SetupOptions = {}): s
   const command = "yellow-pro-mcp";
   const sourceEnv = options.env ?? process.env;
   const includeEnvironment = options.includeEnvironment ?? true;
+  const allowFallback = options.allowFallback ?? true;
   const runner = options.runner ?? runSetupCommand;
   const envPresent = includeEnvironment ? ENV_KEYS.filter((key) => sourceEnv[key]) : [];
   const env: Record<string, string> = { ...(options.additionalEnvironment ?? {}) };
@@ -152,7 +154,10 @@ export function setup(target: string | undefined, options: SetupOptions = {}): s
       try {
         runner("codex", ["mcp", "add", "yellow_pro", ...flags, "--", command]);
         return "yellow_pro MCP server registered with Codex CLI";
-      } catch {
+      } catch (error) {
+        if (!allowFallback) {
+          throw error;
+        }
         const envToml = envPresent.map((key) => `${key} = "${sourceEnv[key]}"`).join(", ");
         return `[mcp_servers.yellow_pro]\ncommand = "${command}"\nenv = { ${envToml} }`;
       }
@@ -174,7 +179,10 @@ export function setup(target: string | undefined, options: SetupOptions = {}): s
       try {
         runner("hermes", ["mcp", "add", "yellow_pro", "--command", command], "y\n");
         return "yellow_pro MCP server registered with Hermes";
-      } catch {
+      } catch (error) {
+        if (!allowFallback) {
+          throw error;
+        }
         const envYaml = envPresent.map((key) => `      ${key}: "${sourceEnv[key]}"`).join("\n");
         return `mcp_servers:\n  yellow_pro:\n    command: ${command}\n    env:\n${envYaml}`;
       }

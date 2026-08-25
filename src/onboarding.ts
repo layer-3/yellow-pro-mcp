@@ -39,8 +39,8 @@ async function verifyCredential(
 export async function connect(options: ConnectOptions): Promise<Record<string, unknown>> {
   const path = options.path ?? credentialsPath();
   const urls = connectionUrls(options.authUrl, options.apiUrl);
-  if (options.client !== "claude-code") {
-    throw new YellowProError("pairing onboarding currently supports only claude-code");
+  if (options.client !== "claude-code" && options.client !== "codex") {
+    throw new YellowProError("pairing onboarding currently supports only claude-code and codex");
   }
   if (!options.replace && readCredentials(path)) {
     throw new YellowProError(`Yellow Pro is already configured at ${path}; pass --replace to overwrite it`);
@@ -63,11 +63,12 @@ export async function connect(options: ConnectOptions): Promise<Record<string, u
     setup(options.client, {
       includeEnvironment: false,
       additionalEnvironment: { YELLOW_PRO_CONFIG_PATH: path },
+      allowFallback: false,
       runner: options.setupRunner,
     });
   } catch {
     throw new YellowProError(
-      `credentials were stored at ${path}, but Claude registration failed; run yellow-pro setup claude-code`,
+      `credentials were stored at ${path}, but ${options.client} registration failed; run yellow-pro setup ${options.client}`,
     );
   }
   return {

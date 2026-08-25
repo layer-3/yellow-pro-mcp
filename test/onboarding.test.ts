@@ -109,3 +109,47 @@ test("failed verification preserves existing credentials during replacement", as
     rmSync(directory, { recursive: true, force: true });
   }
 });
+
+test("connect registers Codex with only the credential path", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "yellow-pro-codex-"));
+  const path = join(directory, "config.json");
+  const originalFetch = globalThis.fetch;
+  const setupCalls: Array<{ bin: string; args: string[] }> = [];
+  const fetcher: typeof fetch = async (input) => {
+    if (String(input).includes("/agent/pairing-codes/redeem")) {
+      return new Response(JSON.stringify({
+        key: {
+          id: "codex-id", api_key: "codex-key", app_session_id: "codex-session",
+          account_type: "primary", scopes: ["read:spot"], status: "active",
+        },
+        secret: "codex-secret",
+      }), { status: 200, headers: { "Content-Type": "application/json" } });
+    }
+    return new Response("{}", { status: 200, headers: { "Content-Type": "application/json" } });
+  };
+  globalThis.fetch = fetcher;
+  try {
+    const result = await connect({
+      code,
+      client: "codex",
+      authUrl: "https://auth.uat.yellow.pro.neodax.app",
+      apiUrl: "https://api.uat.yellow.pro.neodax.app",
+      replace: false,
+      path,
+      fetcher,
+      setupRunner: (bin, args) => setupCalls.push({ bin, args }),
+    });
+    assert.equal(result.connected, true);
+    assert.deepEqual(setupCalls, [{
+      bin: "codex",
+      args: [
+        "mcp", "add", "yellow_pro",
+        "--env", `YELLOW_PRO_CONFIG_PATH=${path}`,
+        "--", "yellow-pro-mcp",
+      ],
+    }]);
+  } finally {
+    globalThis.fetch = originalFetch;
+    rmSync(directory, { recursive: true, force: true });
+  }
+});

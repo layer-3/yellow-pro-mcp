@@ -14,7 +14,7 @@ and an agent skill file for non-MCP agents.
 
 ## Pairing onboarding preview
 
-Pairing lets a Yellow Pro user connect Claude Code without copying an API key or
+Pairing lets a Yellow Pro user connect Claude Code or Codex without copying an API key or
 secret. Generate a short-lived pairing code in Yellow Pro, then run:
 
 ```bash
@@ -41,7 +41,7 @@ yellow-pro disconnect
 ```
 
 Local disconnect does not revoke the remote API key. Revoke it in Yellow Pro.
-The preview currently supports Claude Code and read-only primary-account credentials.
+The preview currently supports Claude Code, Codex, and read-only primary-account credentials.
 Use `--replace` to replace an existing local connection.
 
 Production endpoints are built in. For UAT or another test deployment, provide
