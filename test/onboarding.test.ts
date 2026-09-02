@@ -53,6 +53,7 @@ test("connect stores credentials, verifies, and registers Claude without secrets
       args: [
         "mcp", "add", "yellow_pro", "-s", "user",
         "-e", `YELLOW_PRO_CONFIG_PATH=${path}`,
+        "-e", "YELLOW_PRO_ENABLE_TRADING=true",
         "--", "yellow-pro-mcp",
       ],
     }]);
@@ -146,6 +147,7 @@ test("connect registers Codex with only the credential path", async () => {
       args: [
         "mcp", "add", "yellow_pro",
         "--env", `YELLOW_PRO_CONFIG_PATH=${path}`,
+        "--env", "YELLOW_PRO_ENABLE_TRADING=true",
         "--", "yellow-pro-mcp",
       ],
     }]);
@@ -178,7 +180,9 @@ test("connect registers Gemini, Hermes, and OpenClaw without secrets", async () 
         bin: "gemini",
         args: (path: string) => [
           "mcp", "add", "--scope", "user", "--transport", "stdio",
-          "--env", `YELLOW_PRO_CONFIG_PATH=${path}`, "yellow-pro", "yellow-pro-mcp",
+          "--env", `YELLOW_PRO_CONFIG_PATH=${path}`,
+          "--env", "YELLOW_PRO_ENABLE_TRADING=true",
+          "yellow-pro", "yellow-pro-mcp",
         ],
       },
       {
@@ -187,6 +191,7 @@ test("connect registers Gemini, Hermes, and OpenClaw without secrets", async () 
         args: (path: string) => [
           "mcp", "add", "yellow_pro", "--command", "yellow-pro-mcp",
           "--env", `YELLOW_PRO_CONFIG_PATH=${path}`,
+          "--env", "YELLOW_PRO_ENABLE_TRADING=true",
         ],
       },
       {
@@ -195,6 +200,7 @@ test("connect registers Gemini, Hermes, and OpenClaw without secrets", async () 
         args: (path: string) => [
           "mcp", "add", "yellow_pro", "--command", "yellow-pro-mcp",
           "--env", `YELLOW_PRO_CONFIG_PATH=${path}`,
+          "--env", "YELLOW_PRO_ENABLE_TRADING=true",
         ],
       },
     ];
@@ -267,7 +273,7 @@ test("connect merges Cursor MCP config without exposing credentials", async () =
       type: "stdio",
       command: "yellow-pro-mcp",
       args: [],
-      env: { YELLOW_PRO_CONFIG_PATH: credentialPath },
+      env: { YELLOW_PRO_CONFIG_PATH: credentialPath, YELLOW_PRO_ENABLE_TRADING: "true" },
     });
     assert.equal(readFileSync(cursorConfigPath, "utf8").includes("cursor-secret"), false);
     if (process.platform !== "win32") {

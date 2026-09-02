@@ -28,6 +28,11 @@ The command:
 3. Stores it in a client-specific file under `~/.yellow/connections/` with owner-only permissions.
 4. Registers `yellow-pro-mcp` without putting secrets in the AI client's config.
 
+Paired client registrations enable the MCP trading tool surface by default with
+`YELLOW_PRO_ENABLE_TRADING=true`. The exchange still enforces the credential's
+scopes, so read-only pairing codes can read data but receive `insufficient_scope`
+on trading calls.
+
 Each client uses its own named profile and credential file. The profile defaults
 to the client name:
 

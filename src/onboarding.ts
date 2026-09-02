@@ -65,12 +65,13 @@ export async function connect(options: ConnectOptions): Promise<Record<string, u
     credential.apiUrl,
   );
   writeCredentials(credential, path, options.replace);
+  const registrationEnvironment: Record<string, string> = options.path
+    ? { YELLOW_PRO_CONFIG_PATH: path }
+    : { YELLOW_PRO_PROFILE: profile };
   try {
     setup(options.client, {
       includeEnvironment: false,
-      additionalEnvironment: options.path
-        ? { YELLOW_PRO_CONFIG_PATH: path }
-        : { YELLOW_PRO_PROFILE: profile },
+      additionalEnvironment: { ...registrationEnvironment, YELLOW_PRO_ENABLE_TRADING: "true" },
       allowFallback: false,
       runner: options.setupRunner,
       cursorConfigPath: options.cursorConfigPath,

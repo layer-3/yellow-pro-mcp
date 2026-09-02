@@ -10,6 +10,10 @@ Codex CLI、Gemini CLI、Cursor、Hermes、OpenClaw 或任何 MCP 客户端。�
 凭证仅保存在本机（通过环境变量或 MCP 客户端本地配置，绝不外传）、
 **默认只读**、模块过滤、内置限流，同时提供 CLI 和面向非 MCP Agent 的 Skill 文件。
 
+配对注册到客户端时会默认写入 `YELLOW_PRO_ENABLE_TRADING=true`，因此 MCP
+交易工具会显示出来。实际交易权限仍由服务端凭证 scope 控制；只读配对凭证调用交易接口会返回
+`insufficient_scope`。
+
 ## 一句话安装（适合人和 Agent）
 
 从 GitHub 安装并注册到 Claude Code：
