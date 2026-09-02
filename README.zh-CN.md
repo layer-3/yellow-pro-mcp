@@ -3,12 +3,16 @@
 [English](README.md) | 简体中文
 
 将 **yellow_pro** 交易所暴露给 AI Agent 的 MCP Server + CLI，支持 Claude Code、
-Codex CLI、OpenClaw、Cursor 或任何 MCP 客户端。提供行情数据、账户状态查询，
+Codex CLI、Gemini CLI、Cursor、Hermes、OpenClaw 或任何 MCP 客户端。提供行情数据、账户状态查询，
 以及在显式开启后可进行交易。
 
 遵循官方 OKX / Bybit / Alpaca 交易所 MCP Server 的相同约定：本地 stdio 进程、
 凭证仅保存在本机（通过环境变量或 MCP 客户端本地配置，绝不外传）、
 **默认只读**、模块过滤、内置限流，同时提供 CLI 和面向非 MCP Agent 的 Skill 文件。
+
+配对注册到客户端时会默认写入 `YELLOW_PRO_ENABLE_TRADING=true`，因此 MCP
+交易工具会显示出来。实际交易权限仍由服务端凭证 scope 控制；只读配对凭证调用交易接口会返回
+`insufficient_scope`。
 
 ## 一句话安装（适合人和 Agent）
 
@@ -40,8 +44,10 @@ claude mcp add yellow_pro -s user \
 ```bash
 yellow-pro setup claude-code   # 通过 `claude mcp add`（用户作用域）
 yellow-pro setup codex         # 通过 `codex mcp add`，失败时输出 config.toml 片段
-yellow-pro setup openclaw      # 写入 ~/.openclaw/openclaw.json 的 mcpServers 配置
+yellow-pro setup gemini        # 通过 `gemini mcp add`（用户作用域）
+yellow-pro setup cursor        # 原子合并 ~/.cursor/mcp.json
 yellow-pro setup hermes        # 通过 `hermes mcp add`，失败时输出 config.yaml 片段
+yellow-pro setup openclaw      # 通过 `openclaw mcp add`
 yellow-pro setup json          # 打印通用 MCP JSON 片段，适用于其他客户端
 ```
 
@@ -79,6 +85,8 @@ Agent skill 目录，例如 `~/.claude/skills/yellow-pro/`。
 | `YELLOW_PRO_ENABLE_TRADING` | 否 | 关闭 | 为 `true` 时启用交易工具/命令 |
 | `YELLOW_PRO_MODULES` | 否 | 全部 | 用逗号分隔 `market,account,trading` 以过滤工具 |
 | `YELLOW_PRO_RATE_LIMIT_MS` | 否 | `100` | 请求之间的最小间隔（毫秒） |
+| `YELLOW_PRO_PROFILE` | 否 | — | `~/.yellow/connections/` 下的命名凭证配置 |
+| `YELLOW_PRO_CONFIG_PATH` | 否 | — | 显式凭证文件路径 |
 
 交易工具**不会注册**，除非 `YELLOW_PRO_ENABLE_TRADING=true`。
 行情数据工具无需凭证。
