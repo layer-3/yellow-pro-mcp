@@ -1,5 +1,5 @@
 {
-  "name": "yellow-pro-mcp",
+  "name": "@yellow-pro/yellow-pro-mcp",
   "version": "0.1.0",
   "description": "MCP server + CLI exposing the yellow_pro exchange (market data + trading) to AI agents",
   "license": "MIT",
