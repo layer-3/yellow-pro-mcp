@@ -46,6 +46,7 @@ test("connect stores credentials, verifies, and registers Claude without secrets
       setupRunner: (bin, args) => setupCalls.push({ bin, args }),
     });
     assert.equal(result.connected, true);
+    assert.equal(result.account_type, "primary");
     assert.equal(JSON.stringify(result).includes("api-secret"), false);
     assert.equal(readCredentials(path)?.apiSecret, "api-secret");
     assert.deepEqual(setupCalls, [{
@@ -104,6 +105,54 @@ test("failed verification preserves existing credentials during replacement", as
       setupRunner: () => undefined,
     }), /authentication error/);
     assert.equal(readCredentials(path)?.apiKey, "old-key");
+  } finally {
+    globalThis.fetch = originalFetch;
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("connect succeeds for a subaccount pairing with an agentic session", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "yellow-pro-subaccount-"));
+  const path = join(directory, "config.json");
+  const originalFetch = globalThis.fetch;
+  const setupCalls: Array<{ bin: string; args: string[] }> = [];
+  const fetcher: typeof fetch = async (input) => {
+    if (String(input).includes("/agent/pairing-codes/redeem")) {
+      return new Response(JSON.stringify({
+        key: {
+          id: "agent-id",
+          api_key: "agent-key",
+          app_session_id: "agentic:0xowner:abc",
+          account_type: "subaccount",
+          scopes: ["read:spot", "trade:spot"],
+          status: "active",
+        },
+        secret: "agent-secret",
+      }), { status: 200, headers: { "Content-Type": "application/json" } });
+    }
+    assert.equal(
+      String(input),
+      "https://api.uat.yellow.pro.neodax.app/spot/account?app_session_id=agentic%3A0xowner%3Aabc",
+    );
+    return new Response("{}", { status: 200, headers: { "Content-Type": "application/json" } });
+  };
+  globalThis.fetch = fetcher;
+  try {
+    const result = await connect({
+      code,
+      client: "claude-code",
+      authUrl: "https://auth.uat.yellow.pro.neodax.app",
+      apiUrl: "https://api.uat.yellow.pro.neodax.app",
+      replace: false,
+      path,
+      fetcher,
+      setupRunner: (bin, args) => setupCalls.push({ bin, args }),
+    });
+    assert.equal(result.connected, true);
+    assert.equal(result.account_type, "subaccount");
+    assert.equal(result.client, "claude-code");
+    assert.equal(readCredentials(path)?.appSessionId, "agentic:0xowner:abc");
+    assert.equal(readCredentials(path)?.accountType, "subaccount");
   } finally {
     globalThis.fetch = originalFetch;
     rmSync(directory, { recursive: true, force: true });

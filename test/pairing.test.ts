@@ -35,9 +35,35 @@ test("redeems a UAT pairing code into stored credentials", async () => {
     apiKey: "api-key",
     apiSecret: "api-secret",
     appSessionId: "session-id",
+    accountType: "primary",
     scopes: ["read:spot", "read:futures"],
     client: "claude-code",
   });
+});
+
+test("redeems a subaccount pairing code into stored credentials", async () => {
+  const fetcher: typeof fetch = async () => new Response(JSON.stringify({
+    key: {
+      id: "agent-id",
+      api_key: "agent-key",
+      app_session_id: "agentic:0xowner:abc",
+      account_type: "subaccount",
+      scopes: ["read:spot", "trade:spot"],
+      status: "active",
+    },
+    secret: "agent-secret",
+  }), { status: 200, headers: { "Content-Type": "application/json" } });
+
+  const credential = await redeemPairingCode(
+    code,
+    "https://auth.example",
+    "https://api.example",
+    "cursor",
+    fetcher,
+  );
+  assert.equal(credential.accountType, "subaccount");
+  assert.equal(credential.appSessionId, "agentic:0xowner:abc");
+  assert.equal(credential.client, "cursor");
 });
 
 test("pairing errors expose only the stable error code", async () => {
@@ -48,6 +74,24 @@ test("pairing errors expose only the stable error code", async () => {
   await assert.rejects(
     redeemPairingCode(code, "https://auth.example", "https://api.example", "claude-code", fetcher),
     /pairing failed: pairing_code_consumed/,
+  );
+});
+
+test("pairing rejects unknown account types", async () => {
+  const fetcher: typeof fetch = async () => new Response(JSON.stringify({
+    key: {
+      id: "key-id",
+      api_key: "api-key",
+      app_session_id: "session-id",
+      account_type: "unknown",
+      scopes: ["read:spot"],
+      status: "active",
+    },
+    secret: "api-secret",
+  }), { status: 200, headers: { "Content-Type": "application/json" } });
+  await assert.rejects(
+    redeemPairingCode(code, "https://auth.example", "https://api.example", "claude-code", fetcher),
+    /invalid credential response/,
   );
 });
 

@@ -8,7 +8,7 @@ import {
   writeCredentials,
 } from "./credentials.js";
 import { YellowProClient, YellowProError } from "./client.js";
-import { redeemPairingCode } from "./pairing.js";
+import { PAIRING_CLIENTS, redeemPairingCode } from "./pairing.js";
 
 export interface ConnectOptions {
   code: string;
@@ -42,8 +42,10 @@ export async function connect(options: ConnectOptions): Promise<Record<string, u
   const profile = validateProfile(options.profile ?? options.client);
   const path = options.path ?? credentialsPath(process.env, profile);
   const urls = connectionUrls(options.authUrl, options.apiUrl);
-  if (options.client !== "claude-code" && options.client !== "codex") {
-    throw new YellowProError("pairing onboarding currently supports only claude-code and codex");
+  if (!PAIRING_CLIENTS.has(options.client)) {
+    throw new YellowProError(
+      `pairing client must be one of: ${[...PAIRING_CLIENTS].join(", ")}`,
+    );
   }
   if (!options.replace && readCredentials(path)) {
     throw new YellowProError(`Yellow Pro is already configured at ${path}; pass --replace to overwrite it`);
@@ -81,7 +83,7 @@ export async function connect(options: ConnectOptions): Promise<Record<string, u
     client: credential.client,
     profile,
     api_url: credential.apiUrl,
-    account_type: "primary",
+    account_type: credential.accountType ?? "primary",
     scopes: credential.scopes,
     credential_path: path,
     authentication: "valid",
@@ -107,7 +109,7 @@ export async function connectionStatus(profile?: string, path?: string): Promise
     profile: selectedProfile,
     client: credential.client,
     api_url: credential.apiUrl,
-    account_type: "primary",
+    account_type: credential.accountType ?? "primary",
     scopes: credential.scopes,
     credential_path: credentialPath,
     authentication: "valid",
