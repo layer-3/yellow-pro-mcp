@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { test } from "node:test";
 
 import { readCredentials, writeCredentials } from "../src/credentials.js";
+import { setup } from "../src/cli/support.js";
 import { connect } from "../src/onboarding.js";
 
 const code = `yp_pair_${"b".repeat(64)}`;
@@ -283,4 +284,23 @@ test("connect merges Cursor MCP config without exposing credentials", async () =
     globalThis.fetch = originalFetch;
     rmSync(directory, { recursive: true, force: true });
   }
+});
+
+test("manual Codex setup preserves profile and trading environment", () => {
+  const setupCalls: Array<{ bin: string; args: string[] }> = [];
+  const result = setup("codex", {
+    env: { YELLOW_PRO_PROFILE: "codex", YELLOW_PRO_ENABLE_TRADING: "true" },
+    runner: (bin, args) => setupCalls.push({ bin, args }),
+  });
+
+  assert.equal(result, "yellow_pro MCP server registered with Codex CLI");
+  assert.deepEqual(setupCalls, [{
+    bin: "codex",
+    args: [
+      "mcp", "add", "yellow_pro",
+      "--env", "YELLOW_PRO_ENABLE_TRADING=true",
+      "--env", "YELLOW_PRO_PROFILE=codex",
+      "--", "yellow-pro-mcp",
+    ],
+  }]);
 });
