@@ -14,7 +14,7 @@
   "scripts": {
     "build": "tsc",
     "prepublishOnly": "npm test && npm run build",
-    "test": "node --import tsx --test test/sign.test.ts test/client.test.ts test/server.test.ts test/api.test.ts test/documented-api.test.ts"
+    "test": "node --import tsx --test test/sign.test.ts test/client.test.ts test/server.test.ts test/api.test.ts test/documented-api.test.ts test/credentials.test.ts test/pairing.test.ts test/onboarding.test.ts"
   },
   "engines": {
     "node": ">=18"

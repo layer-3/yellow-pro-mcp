@@ -12,6 +12,58 @@ variables or your MCP client's local config — never sent anywhere else),
 **read-only by default**, module filtering, built-in rate limiting, plus a CLI
 and an agent skill file for non-MCP agents.
 
+## Pairing onboarding preview
+
+Pairing lets a Yellow Pro user connect an MCP client without copying an API key or
+secret. Supported clients: `claude-code`, `codex`, `gemini`, `cursor`, `hermes`, and
+`openclaw`. Generate a short-lived pairing code in Yellow Pro, then run:
+
+```bash
+yellow-pro connect yp_pair_... --client claude-code
+```
+
+The command:
+
+1. Redeems the one-time code through Yellow Pro Auth.
+2. Verifies the returned read-only credential against the trading API.
+3. Stores it in `~/.yellow/config.json` with owner-only permissions.
+4. Registers `yellow-pro-mcp` in Claude Code without putting secrets in Claude's config.
+
+Each client uses its own named profile and credential file. The profile defaults
+to the client name:
+
+```text
+~/.yellow/connections/claude-code.json
+~/.yellow/connections/codex.json
+```
+
+Use `--profile NAME` when you need more than one connection for the same client.
+
+Restart Claude Code after setup, then check the connection at any time:
+
+```bash
+yellow-pro status --profile claude-code
+```
+
+Remove the local credential with:
+
+```bash
+yellow-pro disconnect --profile claude-code
+```
+
+Local disconnect does not revoke the remote API key. Revoke it in Yellow Pro.
+Pairing works for primary accounts and agent sub-accounts (`account_type: subaccount`).
+Use `--replace` to replace an existing local connection.
+
+Production endpoints are built in. For UAT or another test deployment, provide
+both service origins explicitly:
+
+```bash
+yellow-pro connect yp_pair_... --client claude-code \
+  --auth-url https://auth.uat.yellow.pro.neodax.app \
+  --api-url https://api.uat.yellow.pro.neodax.app
+```
+
 ## One-liner install (for agents and humans)
 
 Install from GitHub and register with Claude Code:
@@ -44,6 +96,8 @@ Multi-client setup — each registers the MCP server using your current
 ```bash
 yellow-pro setup claude-code   # via `claude mcp add` (user scope)
 yellow-pro setup codex         # via `codex mcp add`, falls back to config.toml snippet
+yellow-pro setup gemini        # writes ~/.gemini/google_mcp_config.json mcpServers entry
+yellow-pro setup cursor        # writes ~/.cursor/mcp.json mcpServers entry
 yellow-pro setup openclaw      # writes ~/.openclaw/openclaw.json mcpServers entry
 yellow-pro setup hermes        # via `hermes mcp add`, falls back to config.yaml snippet
 yellow-pro setup json          # prints generic MCP JSON for any other client
@@ -75,8 +129,8 @@ into your agent's skills directory (e.g. `~/.claude/skills/yellow-pro/`).
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `YELLOW_PRO_BASE_URL` | no | selected by `YELLOW_PRO_SANDBOX` | Explicit REST base URL override |
-| `YELLOW_PRO_SANDBOX` | no | `false` | Exactly `true` uses staging (`https://api.staging.yellow.pro.neodax.app`); otherwise production (`https://trade.api.yellow.pro`) |
+| `YELLOW_PRO_BASE_URL` | no | production API | Explicit REST base URL override for testing |
+| `YELLOW_PRO_SANDBOX` | no | `false` | When `true`, requires an explicit `YELLOW_PRO_BASE_URL` |
 | `YELLOW_PRO_API_KEY` | private tools | — | API key |
 | `YELLOW_PRO_API_SECRET` | private tools | — | API secret (HMAC-SHA256) |
 | `YELLOW_PRO_APP_SESSION_ID` | private tools | — | app session id (`uid` credential) |

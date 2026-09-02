@@ -19,7 +19,11 @@ export function registerAccountTools(server: McpServer, client: YellowProClient)
   );
   server.registerTool(
     "get_spot_accounts",
-    { description: "All Spot accounts for the authenticated user.", inputSchema: {} },
+    {
+      description:
+        "Spot accounts for the authenticated principal. HMAC keys bound to one app_session_id return only that session; JWT still lists every wallet-owned account. Prefer get_spot_account when verifying agent sub-account isolation.",
+      inputSchema: {},
+    },
     async () => jsonResult(await api.spotAccounts(client)),
   );
   server.registerTool(
@@ -39,7 +43,8 @@ export function registerAccountTools(server: McpServer, client: YellowProClient)
   server.registerTool(
     "get_perpetual_accounts",
     {
-      description: "All perpetual accounts including balances, positions, equity, and initial leverage.",
+      description:
+        "Perpetual accounts including balances, positions, equity, and initial leverage. HMAC keys bound to one app_session_id return only that session; JWT still lists every wallet-owned account. Prefer get_balance for agent isolation checks.",
       inputSchema: {},
     },
     async () => jsonResult(await api.perpetualAccounts(client)),

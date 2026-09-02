@@ -2,6 +2,7 @@
 import { parseArgs } from "node:util";
 import { api, type OrderInput } from "./api.js";
 import { clientFromEnv, YellowProError } from "./client.js";
+import { connect, connectionStatus, disconnect } from "./onboarding.js";
 import {
   asMarketType,
   num,
@@ -45,6 +46,12 @@ async function run(): Promise<unknown> {
       "trigger-price": { type: "string" },
       "trigger-type": { type: "string" },
       "client-order-id": { type: "string" },
+      code: { type: "string" },
+      client: { type: "string" },
+      profile: { type: "string" },
+      "auth-url": { type: "string" },
+      "api-url": { type: "string" },
+      replace: { type: "boolean" },
       help: { type: "boolean", short: "h" },
       version: { type: "boolean", short: "v" },
     },
@@ -55,6 +62,22 @@ async function run(): Promise<unknown> {
   }
   if (values.help || command === undefined || command === "help") {
     return USAGE;
+  }
+  if (command === "connect") {
+    return connect({
+      code: req(values.code ?? args[0], "pairing-code"),
+      client: values.client ?? "claude-code",
+      profile: values.profile,
+      authUrl: values["auth-url"],
+      apiUrl: values["api-url"],
+      replace: values.replace ?? false,
+    });
+  }
+  if (command === "status") {
+    return connectionStatus(values.profile);
+  }
+  if (command === "disconnect") {
+    return disconnect(values.profile);
   }
   const client = clientFromEnv();
   const cursorQuery = { cursor: values.cursor, page_size: num(values["page-size"]) };
