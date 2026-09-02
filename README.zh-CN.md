@@ -40,6 +40,8 @@ claude mcp add yellow_pro -s user \
 ```bash
 yellow-pro setup claude-code   # 通过 `claude mcp add`（用户作用域）
 yellow-pro setup codex         # 通过 `codex mcp add`，失败时输出 config.toml 片段
+yellow-pro setup gemini        # 写入 ~/.gemini/google_mcp_config.json 的 mcpServers 配置
+yellow-pro setup cursor        # 写入 ~/.cursor/mcp.json 的 mcpServers 配置
 yellow-pro setup openclaw      # 写入 ~/.openclaw/openclaw.json 的 mcpServers 配置
 yellow-pro setup hermes        # 通过 `hermes mcp add`，失败时输出 config.yaml 片段
 yellow-pro setup json          # 打印通用 MCP JSON 片段，适用于其他客户端

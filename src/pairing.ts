@@ -1,6 +1,15 @@
 import { type StoredCredentials, validateServiceUrl } from "./credentials.js";
 import { YellowProError } from "./errors.js";
 
+export const PAIRING_CLIENTS = new Set([
+  "claude-code",
+  "codex",
+  "gemini",
+  "cursor",
+  "hermes",
+  "openclaw",
+]);
+
 interface PairingKeyResponse {
   id: string;
   api_key: string;
@@ -15,6 +24,8 @@ interface PairingResponse {
   secret: string;
 }
 
+const pairingAccountTypes = new Set(["primary", "subaccount"]);
+
 function parsePairingResponse(value: unknown, apiUrl: string, client: string): StoredCredentials {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     throw new YellowProError("pairing returned an invalid response");
@@ -24,7 +35,7 @@ function parsePairingResponse(value: unknown, apiUrl: string, client: string): S
   if (
     typeof key !== "object" || key === null ||
     typeof key.id !== "string" || typeof key.api_key !== "string" ||
-    typeof key.app_session_id !== "string" || key.account_type !== "primary" ||
+    typeof key.app_session_id !== "string" || !pairingAccountTypes.has(key.account_type) ||
     !Array.isArray(key.scopes) || !key.scopes.every((scope) => typeof scope === "string") ||
     key.status !== "active" || typeof response.secret !== "string" || response.secret === "" ||
     key.id === "" || key.api_key === "" || key.app_session_id === "" || key.scopes.length === 0
@@ -38,6 +49,7 @@ function parsePairingResponse(value: unknown, apiUrl: string, client: string): S
     apiKey: key.api_key,
     apiSecret: response.secret,
     appSessionId: key.app_session_id,
+    accountType: key.account_type,
     scopes: key.scopes,
     client,
   };

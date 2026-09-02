@@ -14,8 +14,9 @@ and an agent skill file for non-MCP agents.
 
 ## Pairing onboarding preview
 
-Pairing lets a Yellow Pro user connect Claude Code or Codex without copying an API key or
-secret. Generate a short-lived pairing code in Yellow Pro, then run:
+Pairing lets a Yellow Pro user connect an MCP client without copying an API key or
+secret. Supported clients: `claude-code`, `codex`, `gemini`, `cursor`, `hermes`, and
+`openclaw`. Generate a short-lived pairing code in Yellow Pro, then run:
 
 ```bash
 yellow-pro connect yp_pair_... --client claude-code
@@ -51,7 +52,7 @@ yellow-pro disconnect --profile claude-code
 ```
 
 Local disconnect does not revoke the remote API key. Revoke it in Yellow Pro.
-The preview currently supports Claude Code, Codex, and read-only primary-account credentials.
+Pairing works for primary accounts and agent sub-accounts (`account_type: subaccount`).
 Use `--replace` to replace an existing local connection.
 
 Production endpoints are built in. For UAT or another test deployment, provide
@@ -95,6 +96,8 @@ Multi-client setup — each registers the MCP server using your current
 ```bash
 yellow-pro setup claude-code   # via `claude mcp add` (user scope)
 yellow-pro setup codex         # via `codex mcp add`, falls back to config.toml snippet
+yellow-pro setup gemini        # writes ~/.gemini/google_mcp_config.json mcpServers entry
+yellow-pro setup cursor        # writes ~/.cursor/mcp.json mcpServers entry
 yellow-pro setup openclaw      # writes ~/.openclaw/openclaw.json mcpServers entry
 yellow-pro setup hermes        # via `hermes mcp add`, falls back to config.yaml snippet
 yellow-pro setup json          # prints generic MCP JSON for any other client

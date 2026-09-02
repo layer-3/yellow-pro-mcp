@@ -51,7 +51,7 @@ Setup:
   yellow-pro connect <pairing-code> [--client claude-code] [--profile NAME] [--auth-url URL --api-url URL] [--replace]
   yellow-pro status [--profile NAME]
   yellow-pro disconnect [--profile NAME]
-  yellow-pro setup claude-code|codex|openclaw|hermes|json
+  yellow-pro setup claude-code|codex|gemini|cursor|openclaw|hermes|json
 
 Env: YELLOW_PRO_BASE_URL, YELLOW_PRO_SANDBOX, YELLOW_PRO_API_KEY, YELLOW_PRO_API_SECRET,
      YELLOW_PRO_APP_SESSION_ID, YELLOW_PRO_ENABLE_TRADING, YELLOW_PRO_MODULES,
@@ -188,7 +188,23 @@ export function setup(target: string | undefined, options: SetupOptions = {}): s
       }
     case "json":
       return JSON.stringify({ mcpServers: { yellow_pro: { command, env } } }, null, 2);
+    case "gemini":
+    case "cursor": {
+      const file = target === "cursor"
+        ? join(homedir(), ".cursor", "mcp.json")
+        : join(homedir(), ".gemini", "google_mcp_config.json");
+      const config: Record<string, unknown> = existsSync(file)
+        ? JSON.parse(readFileSync(file, "utf8"))
+        : {};
+      const servers = config.mcpServers && typeof config.mcpServers === "object"
+        ? config.mcpServers
+        : {};
+      config.mcpServers = { ...servers, yellow_pro: { command, env } };
+      mkdirSync(dirname(file), { recursive: true });
+      writeFileSync(file, `${JSON.stringify(config, null, 2)}\n`);
+      return `yellow_pro MCP server written to ${file}`;
+    }
     default:
-      throw new YellowProError("setup target must be claude-code, codex, openclaw, hermes, or json");
+      throw new YellowProError("setup target must be claude-code, codex, gemini, cursor, openclaw, hermes, or json");
   }
 }
