@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -20,6 +20,7 @@ const credential: StoredCredentials = {
   apiKey: "api-key",
   apiSecret: "api-secret",
   appSessionId: "session-id",
+  accountType: "primary",
   scopes: ["read:spot", "read:futures"],
   client: "claude-code",
 };
@@ -60,6 +61,18 @@ test("credentials reject an insecure existing directory", { skip: process.platfo
   }
 });
 
+test("legacy credential files default to the primary account type", () => {
+  const directory = mkdtempSync(join(tmpdir(), "yellow-pro-legacy-credentials-"));
+  const path = join(directory, "config.json");
+  try {
+    const { accountType: _accountType, ...legacyCredential } = credential;
+    writeFileSync(path, JSON.stringify(legacyCredential));
+    assert.equal(readCredentials(path)?.accountType, "primary");
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
 test("test endpoint overrides require a complete HTTPS pair", () => {
   assert.deepEqual(connectionUrls(), {
     authUrl: "https://auth.api.yellow.pro",
@@ -77,7 +90,8 @@ test("test endpoint overrides require a complete HTTPS pair", () => {
 });
 
 test("profiles resolve to separate credential files", () => {
-  assert.match(credentialsPath({}, "claude-code"), /\.yellow\/connections\/claude-code\.json$/);
-  assert.match(credentialsPath({}, "codex"), /\.yellow\/connections\/codex\.json$/);
+  for (const profile of ["claude-code", "codex", "gemini", "cursor", "hermes", "openclaw"]) {
+    assert.match(credentialsPath({}, profile), new RegExp(`\\.yellow/connections/${profile}\\.json$`));
+  }
   assert.throws(() => credentialsPath({}, "../escape"), /profile must contain/);
 });

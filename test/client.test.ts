@@ -49,6 +49,7 @@ test("stored UAT credentials are used when environment credentials are absent", 
     apiKey: "stored-key",
     apiSecret: "stored-secret",
     appSessionId: "stored-session",
+    accountType: "primary",
     scopes: ["read:spot"],
     client: "claude-code",
   }, path);
@@ -78,6 +79,7 @@ test("complete environment credentials do not inherit the stored environment", a
     apiKey: "stored-key",
     apiSecret: "stored-secret",
     appSessionId: "stored-session",
+    accountType: "primary",
     scopes: ["read:spot"],
     client: "claude-code",
   }, path);

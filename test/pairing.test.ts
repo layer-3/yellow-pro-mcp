@@ -35,9 +35,34 @@ test("redeems a UAT pairing code into stored credentials", async () => {
     apiKey: "api-key",
     apiSecret: "api-secret",
     appSessionId: "session-id",
+    accountType: "primary",
     scopes: ["read:spot", "read:futures"],
     client: "claude-code",
   });
+});
+
+test("redeems a sub-account pairing code", async () => {
+  const fetcher: typeof fetch = async () => new Response(JSON.stringify({
+    key: {
+      id: "key-id",
+      api_key: "api-key",
+      app_session_id: "agent-session-id",
+      account_type: "subaccount",
+      scopes: ["read:spot", "read:futures"],
+      status: "active",
+    },
+    secret: "api-secret",
+  }), { status: 200, headers: { "Content-Type": "application/json" } });
+
+  const credential = await redeemPairingCode(
+    code,
+    "https://auth.example",
+    "https://api.example",
+    "codex",
+    fetcher,
+  );
+  assert.equal(credential.appSessionId, "agent-session-id");
+  assert.equal(credential.accountType, "subaccount");
 });
 
 test("pairing errors expose only the stable error code", async () => {

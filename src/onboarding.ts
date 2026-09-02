@@ -20,7 +20,10 @@ export interface ConnectOptions {
   path?: string;
   fetcher?: typeof fetch;
   setupRunner?: SetupRunner;
+  cursorConfigPath?: string;
 }
+
+const SUPPORTED_CLIENTS = new Set(["claude-code", "codex", "gemini", "cursor", "hermes", "openclaw"]);
 
 async function verifyCredential(
   apiKey: string,
@@ -42,8 +45,8 @@ export async function connect(options: ConnectOptions): Promise<Record<string, u
   const profile = validateProfile(options.profile ?? options.client);
   const path = options.path ?? credentialsPath(process.env, profile);
   const urls = connectionUrls(options.authUrl, options.apiUrl);
-  if (options.client !== "claude-code" && options.client !== "codex") {
-    throw new YellowProError("pairing onboarding currently supports only claude-code and codex");
+  if (!SUPPORTED_CLIENTS.has(options.client)) {
+    throw new YellowProError("pairing onboarding supports claude-code, codex, gemini, cursor, hermes, and openclaw");
   }
   if (!options.replace && readCredentials(path)) {
     throw new YellowProError(`Yellow Pro is already configured at ${path}; pass --replace to overwrite it`);
@@ -70,6 +73,7 @@ export async function connect(options: ConnectOptions): Promise<Record<string, u
         : { YELLOW_PRO_PROFILE: profile },
       allowFallback: false,
       runner: options.setupRunner,
+      cursorConfigPath: options.cursorConfigPath,
     });
   } catch {
     throw new YellowProError(
@@ -81,7 +85,7 @@ export async function connect(options: ConnectOptions): Promise<Record<string, u
     client: credential.client,
     profile,
     api_url: credential.apiUrl,
-    account_type: "primary",
+    account_type: credential.accountType,
     scopes: credential.scopes,
     credential_path: path,
     authentication: "valid",
@@ -107,7 +111,7 @@ export async function connectionStatus(profile?: string, path?: string): Promise
     profile: selectedProfile,
     client: credential.client,
     api_url: credential.apiUrl,
-    account_type: "primary",
+    account_type: credential.accountType,
     scopes: credential.scopes,
     credential_path: credentialPath,
     authentication: "valid",

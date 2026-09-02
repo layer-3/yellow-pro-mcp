@@ -24,7 +24,8 @@ function parsePairingResponse(value: unknown, apiUrl: string, client: string): S
   if (
     typeof key !== "object" || key === null ||
     typeof key.id !== "string" || typeof key.api_key !== "string" ||
-    typeof key.app_session_id !== "string" || key.account_type !== "primary" ||
+    typeof key.app_session_id !== "string" ||
+    (key.account_type !== "primary" && key.account_type !== "subaccount") ||
     !Array.isArray(key.scopes) || !key.scopes.every((scope) => typeof scope === "string") ||
     key.status !== "active" || typeof response.secret !== "string" || response.secret === "" ||
     key.id === "" || key.api_key === "" || key.app_session_id === "" || key.scopes.length === 0
@@ -38,6 +39,7 @@ function parsePairingResponse(value: unknown, apiUrl: string, client: string): S
     apiKey: key.api_key,
     apiSecret: response.secret,
     appSessionId: key.app_session_id,
+    accountType: key.account_type,
     scopes: key.scopes,
     client,
   };

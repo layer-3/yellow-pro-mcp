@@ -21,6 +21,7 @@ export interface StoredCredentials {
   apiKey: string;
   apiSecret: string;
   appSessionId: string;
+  accountType: "primary" | "subaccount";
   scopes: string[];
   client: string;
 }
@@ -91,6 +92,10 @@ function validateCredentials(value: unknown): StoredCredentials {
   if (record.version !== 1 || !Array.isArray(record.scopes) || !record.scopes.every((scope) => typeof scope === "string")) {
     throw new YellowProError("invalid Yellow Pro credential file format");
   }
+  const accountType = record.accountType ?? "primary";
+  if (accountType !== "primary" && accountType !== "subaccount") {
+    throw new YellowProError("invalid Yellow Pro credential file: invalid accountType");
+  }
   return {
     version: 1,
     apiUrl,
@@ -98,6 +103,7 @@ function validateCredentials(value: unknown): StoredCredentials {
     apiKey: record.apiKey as string,
     apiSecret: record.apiSecret as string,
     appSessionId: record.appSessionId as string,
+    accountType,
     scopes: record.scopes as string[],
     client: record.client as string,
   };

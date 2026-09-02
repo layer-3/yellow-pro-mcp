@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -72,6 +72,7 @@ test("failed verification preserves existing credentials during replacement", as
     apiKey: "old-key",
     apiSecret: "old-secret",
     appSessionId: "old-session",
+    accountType: "primary",
     scopes: ["read:spot"],
     client: "claude-code",
   }, path);
@@ -81,7 +82,7 @@ test("failed verification preserves existing credentials during replacement", as
       return new Response(JSON.stringify({
         key: {
           id: "new-id", api_key: "new-key", app_session_id: "new-session",
-          account_type: "primary", scopes: ["read:spot"], status: "active",
+          account_type: "subaccount", scopes: ["read:spot"], status: "active",
         },
         secret: "new-secret",
       }), { status: 200, headers: { "Content-Type": "application/json" } });
@@ -120,7 +121,7 @@ test("connect registers Codex with only the credential path", async () => {
       return new Response(JSON.stringify({
         key: {
           id: "codex-id", api_key: "codex-key", app_session_id: "codex-session",
-          account_type: "primary", scopes: ["read:spot"], status: "active",
+          account_type: "subaccount", scopes: ["read:spot"], status: "active",
         },
         secret: "codex-secret",
       }), { status: 200, headers: { "Content-Type": "application/json" } });
@@ -148,6 +149,130 @@ test("connect registers Codex with only the credential path", async () => {
         "--", "yellow-pro-mcp",
       ],
     }]);
+  } finally {
+    globalThis.fetch = originalFetch;
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("connect registers Gemini, Hermes, and OpenClaw without secrets", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "yellow-pro-agent-connect-"));
+  const originalFetch = globalThis.fetch;
+  const fetcher: typeof fetch = async (input) => {
+    if (String(input).includes("/agent/pairing-codes/redeem")) {
+      return new Response(JSON.stringify({
+        key: {
+          id: "key-id", api_key: "api-key", app_session_id: "session-id",
+          account_type: "primary", scopes: ["read:spot"], status: "active",
+        },
+        secret: "api-secret",
+      }), { status: 200, headers: { "Content-Type": "application/json" } });
+    }
+    return new Response("{}", { status: 200, headers: { "Content-Type": "application/json" } });
+  };
+  globalThis.fetch = fetcher;
+  try {
+    const cases = [
+      {
+        client: "gemini",
+        bin: "gemini",
+        args: (path: string) => [
+          "mcp", "add", "--scope", "user", "--transport", "stdio",
+          "--env", `YELLOW_PRO_CONFIG_PATH=${path}`, "yellow-pro", "yellow-pro-mcp",
+        ],
+      },
+      {
+        client: "hermes",
+        bin: "hermes",
+        args: (path: string) => [
+          "mcp", "add", "yellow_pro", "--command", "yellow-pro-mcp",
+          "--env", `YELLOW_PRO_CONFIG_PATH=${path}`,
+        ],
+      },
+      {
+        client: "openclaw",
+        bin: "openclaw",
+        args: (path: string) => [
+          "mcp", "add", "yellow_pro", "--command", "yellow-pro-mcp",
+          "--env", `YELLOW_PRO_CONFIG_PATH=${path}`,
+        ],
+      },
+    ];
+    for (const entry of cases) {
+      const path = join(directory, `${entry.client}.json`);
+      const setupCalls: Array<{ bin: string; args: string[]; input?: string }> = [];
+      const result = await connect({
+        code,
+        client: entry.client,
+        authUrl: "https://auth.uat.yellow.pro.neodax.app",
+        apiUrl: "https://api.uat.yellow.pro.neodax.app",
+        replace: false,
+        path,
+        fetcher,
+        setupRunner: (bin, args, input) => setupCalls.push({ bin, args, input }),
+      });
+      assert.equal(result.connected, true);
+      assert.equal(JSON.stringify(setupCalls).includes("api-secret"), false);
+      assert.deepEqual(setupCalls, [{
+        bin: entry.bin,
+        args: entry.args(path),
+        ...(entry.client === "hermes" ? { input: "y\n" } : { input: undefined }),
+      }]);
+    }
+  } finally {
+    globalThis.fetch = originalFetch;
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("connect merges Cursor MCP config without exposing credentials", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "yellow-pro-cursor-connect-"));
+  const credentialPath = join(directory, "credentials.json");
+  const cursorConfigPath = join(directory, ".cursor", "mcp.json");
+  mkdirSync(join(directory, ".cursor"));
+  writeFileSync(cursorConfigPath, JSON.stringify({
+    theme: "dark",
+    mcpServers: { existing: { command: "existing-mcp" } },
+  }));
+  const originalFetch = globalThis.fetch;
+  const fetcher: typeof fetch = async (input) => {
+    if (String(input).includes("/agent/pairing-codes/redeem")) {
+      return new Response(JSON.stringify({
+        key: {
+          id: "cursor-id", api_key: "cursor-key", app_session_id: "cursor-session",
+          account_type: "subaccount", scopes: ["read:spot"], status: "active",
+        },
+        secret: "cursor-secret",
+      }), { status: 200, headers: { "Content-Type": "application/json" } });
+    }
+    return new Response("{}", { status: 200, headers: { "Content-Type": "application/json" } });
+  };
+  globalThis.fetch = fetcher;
+  try {
+    const result = await connect({
+      code,
+      client: "cursor",
+      authUrl: "https://auth.uat.yellow.pro.neodax.app",
+      apiUrl: "https://api.uat.yellow.pro.neodax.app",
+      replace: false,
+      path: credentialPath,
+      fetcher,
+      cursorConfigPath,
+    });
+    assert.equal(result.account_type, "subaccount");
+    const config = JSON.parse(readFileSync(cursorConfigPath, "utf8"));
+    assert.equal(config.theme, "dark");
+    assert.deepEqual(config.mcpServers.existing, { command: "existing-mcp" });
+    assert.deepEqual(config.mcpServers.yellow_pro, {
+      type: "stdio",
+      command: "yellow-pro-mcp",
+      args: [],
+      env: { YELLOW_PRO_CONFIG_PATH: credentialPath },
+    });
+    assert.equal(readFileSync(cursorConfigPath, "utf8").includes("cursor-secret"), false);
+    if (process.platform !== "win32") {
+      assert.equal(statSync(cursorConfigPath).mode & 0o777, 0o600);
+    }
   } finally {
     globalThis.fetch = originalFetch;
     rmSync(directory, { recursive: true, force: true });

@@ -3,7 +3,7 @@
 English | [简体中文](README.zh-CN.md)
 
 MCP server + CLI exposing the **yellow_pro** exchange to AI agents — Claude Code,
-Codex CLI, OpenClaw, Cursor, or any MCP client. Market data, account state, and
+Codex CLI, Gemini CLI, Cursor, Hermes, OpenClaw, or any MCP client. Market data, account state, and
 (when explicitly enabled) trading.
 
 Follows the same conventions as the official OKX / Bybit / Alpaca exchange MCP
@@ -14,7 +14,7 @@ and an agent skill file for non-MCP agents.
 
 ## Pairing onboarding preview
 
-Pairing lets a Yellow Pro user connect Claude Code or Codex without copying an API key or
+Pairing lets a Yellow Pro user connect a supported AI client without copying an API key or
 secret. Generate a short-lived pairing code in Yellow Pro, then run:
 
 ```bash
@@ -25,8 +25,8 @@ The command:
 
 1. Redeems the one-time code through Yellow Pro Auth.
 2. Verifies the returned read-only credential against the trading API.
-3. Stores it in `~/.yellow/config.json` with owner-only permissions.
-4. Registers `yellow-pro-mcp` in Claude Code without putting secrets in Claude's config.
+3. Stores it in a client-specific file under `~/.yellow/connections/` with owner-only permissions.
+4. Registers `yellow-pro-mcp` without putting secrets in the AI client's config.
 
 Each client uses its own named profile and credential file. The profile defaults
 to the client name:
@@ -34,11 +34,15 @@ to the client name:
 ```text
 ~/.yellow/connections/claude-code.json
 ~/.yellow/connections/codex.json
+~/.yellow/connections/gemini.json
+~/.yellow/connections/cursor.json
+~/.yellow/connections/hermes.json
+~/.yellow/connections/openclaw.json
 ```
 
 Use `--profile NAME` when you need more than one connection for the same client.
 
-Restart Claude Code after setup, then check the connection at any time:
+Restart the selected client after setup, then check the connection at any time:
 
 ```bash
 yellow-pro status --profile claude-code
@@ -51,7 +55,8 @@ yellow-pro disconnect --profile claude-code
 ```
 
 Local disconnect does not revoke the remote API key. Revoke it in Yellow Pro.
-The preview currently supports Claude Code, Codex, and read-only primary-account credentials.
+The preview supports Claude Code, Codex CLI, Gemini CLI, Cursor, Hermes, OpenClaw,
+and read-only primary-account or sub-account credentials.
 Use `--replace` to replace an existing local connection.
 
 Production endpoints are built in. For UAT or another test deployment, provide
@@ -95,8 +100,10 @@ Multi-client setup — each registers the MCP server using your current
 ```bash
 yellow-pro setup claude-code   # via `claude mcp add` (user scope)
 yellow-pro setup codex         # via `codex mcp add`, falls back to config.toml snippet
-yellow-pro setup openclaw      # writes ~/.openclaw/openclaw.json mcpServers entry
+yellow-pro setup gemini        # via `gemini mcp add` (user scope)
+yellow-pro setup cursor        # atomically merges ~/.cursor/mcp.json
 yellow-pro setup hermes        # via `hermes mcp add`, falls back to config.yaml snippet
+yellow-pro setup openclaw      # via `openclaw mcp add`
 yellow-pro setup json          # prints generic MCP JSON for any other client
 ```
 
@@ -134,6 +141,8 @@ into your agent's skills directory (e.g. `~/.claude/skills/yellow-pro/`).
 | `YELLOW_PRO_ENABLE_TRADING` | no | off | exactly `true` to enable trading tools/commands |
 | `YELLOW_PRO_MODULES` | no | all | comma list of `market,account,trading` to filter tools |
 | `YELLOW_PRO_RATE_LIMIT_MS` | no | `100` | min gap between requests (ms) |
+| `YELLOW_PRO_PROFILE` | no | — | named credential profile under `~/.yellow/connections/` |
+| `YELLOW_PRO_CONFIG_PATH` | no | — | explicit credential file path |
 
 Trading tools are **not registered** unless `YELLOW_PRO_ENABLE_TRADING=true`.
 Market data tools work without credentials.
