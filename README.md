@@ -197,6 +197,29 @@ both `cursor` and `use_cursor`, and its documented `page_size` maximum is 500.
 
 The `yellow-pro` CLI mirrors the same surface — `yellow-pro --help`.
 
+## Agent operating guidelines
+
+The MCP server sends a compact version of these rules to clients as its default
+instructions:
+
+- Call `get_markets` before trading to confirm market ids, precision, limits,
+  leverage caps, and position modes.
+- Amounts are decimal strings in the market's base asset, such as ETH for
+  `ETHUSDT` or BTC for `BTCUSDT-PERP`. Prices are decimal strings in the quote
+  asset, usually USDT.
+- Check balances, open orders, and positions before any state-changing tool call.
+- Spot and Perpetual balances are separate. Use `transfer` explicitly when funds
+  need to move between Spot and Perps.
+- Trading tools may be visible even when the credential is read-only. The
+  exchange enforces API scopes and returns `insufficient_scope` for unauthorized
+  trading calls.
+- For tests, prefer small `post_only` or `limit` orders that rest on the book,
+  then verify open orders and cancel/cleanup.
+- Do not place market orders, close positions, or use bulk cancellation unless
+  the user explicitly asks or confirms.
+- For Perpetuals, `HEDGE` mode uses `direction: "long"` or `"short"`.
+  `ONE_WAY` mode requires `direction: "both"`; confirm the mode before using it.
+
 ## Troubleshooting
 
 **MCP client shows no tools / server fails to connect**
