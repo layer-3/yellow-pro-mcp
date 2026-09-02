@@ -16,6 +16,17 @@ export interface ServerConfig {
   readonly modules: Module[];
 }
 
+const SERVER_INSTRUCTIONS = [
+  "yellow_pro exchange. Use native market ids such as ETHUSDT and BTCUSDT-PERP.",
+  "Call get_markets first to confirm market ids, precision, limits, leverage caps, and position modes before trading.",
+  "Order amounts are decimal strings in the market's base asset; prices are decimal strings in the quote asset. Label the base asset when confirming an order.",
+  "Spot and Perpetual balances are separate. Check balances, open orders, and positions before state-changing actions; transfer funds explicitly when needed.",
+  "Trading tools may be registered while credentials remain read-only; the exchange enforces API scopes and returns insufficient_scope for unauthorized trading.",
+  "For tests, prefer small post_only or limit orders that rest on the book, then verify open orders and cancel/cleanup. Do not place market orders or close positions unless the user explicitly asks or confirms.",
+  "For Perpetuals, HEDGE mode uses direction long or short. ONE_WAY mode requires direction both. Never infer both unless get_perpetual_accounts or get_markets confirms ONE_WAY mode.",
+  "Market data is public; account and trading tools require credentials.",
+].join(" ");
+
 function parseModule(value: string): Module | undefined {
   switch (value) {
     case "market":
@@ -44,15 +55,7 @@ export function configFromEnv(env: NodeJS.ProcessEnv = process.env): ServerConfi
 export function createServer(config: ServerConfig): McpServer {
   const server = new McpServer(
     { name: "yellow_pro", version: VERSION },
-    {
-      instructions:
-        "yellow_pro exchange. Use native market ids such as ETHUSDT and BTCUSDT-PERP. " +
-        "Call get_markets first. Order amounts are decimal strings representing quantity in the " +
-        "market's base asset for both Spot and Perpetual markets (for example, ETHUSDT amounts are ETH " +
-        "and BTCUSDT-PERP amounts are BTC). Label the amount with that base asset when confirming an " +
-        "order. Prices are decimal strings denominated in the market's quote asset. " +
-        "Market data is public; account and trading tools require credentials.",
-    },
+    { instructions: SERVER_INSTRUCTIONS },
   );
 
   if (config.modules.includes("market")) {

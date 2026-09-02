@@ -132,6 +132,23 @@ Agent skill 目录，例如 `~/.claude/skills/yellow-pro/`。
 
 `yellow-pro` CLI 提供同样的功能——`yellow-pro --help`。
 
+## Agent 操作指南
+
+MCP Server 会把这些规则的简短版本作为默认 instructions 发送给客户端：
+
+- 交易前先调用 `get_markets`，确认市场 id、精度、限制、杠杆上限和持仓模式。
+- 数量是市场 base asset 的十进制字符串，例如 `ETHUSDT` 的 ETH、`BTCUSDT-PERP`
+  的 BTC。价格是 quote asset 的十进制字符串，通常是 USDT。
+- 调用任何会改变状态的工具前，先检查余额、开放订单和持仓。
+- 现货和永续余额是分开的。需要在两者之间移动资金时，显式使用 `transfer`。
+- 即使凭证是只读的，交易工具也可能显示出来。服务端会按 API scope 校验权限，未授权交易会返回
+  `insufficient_scope`。
+- 测试时优先使用小额 `post_only` 或 `limit` 订单，让订单挂在订单簿上，然后验证 open orders
+  并取消/清理。
+- 除非用户明确要求或确认，不要下市价单、平仓或使用批量撤单。
+- 永续 `HEDGE` 模式使用 `direction: "long"` 或 `"short"`。`ONE_WAY` 模式要求
+  `direction: "both"`；使用前先确认模式。
+
 ## 故障排查
 
 **MCP 客户端看不到工具 / 连接失败**
