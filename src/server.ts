@@ -21,7 +21,7 @@ const SERVER_INSTRUCTIONS = [
   "Call get_markets first to confirm market ids, precision, limits, leverage caps, and position modes before trading.",
   "Order amounts are decimal strings in the market's base asset; prices are decimal strings in the quote asset. Label the base asset when confirming an order.",
   "Spot and Perpetual balances are separate. Check balances, open orders, and positions before state-changing actions; transfer funds explicitly when needed.",
-  "Trading tools may be registered while credentials remain read-only; the exchange enforces API scopes and returns insufficient_scope for unauthorized trading.",
+  "API-key scopes can change in the Yellow Pro UI without reconnecting. Call get_api_key_permissions before deciding credentials are read-only, before trading, and whenever the user says permissions changed. The exchange enforces the returned live scopes.",
   "For tests, prefer small post_only or limit orders that rest on the book, then verify open orders and cancel/cleanup. Do not place market orders or close positions unless the user explicitly asks or confirms.",
   "For Perpetuals, HEDGE mode uses direction long or short. ONE_WAY mode requires direction both. Never infer both unless get_perpetual_accounts or get_markets confirms ONE_WAY mode.",
   "Market data is public; account and trading tools require credentials.",

@@ -46,6 +46,8 @@ to the client name:
 ```
 
 Use `--profile NAME` when you need more than one connection for the same client.
+The scopes reported by `connect` and `status` are captured at pairing time; use
+`get_api_key_permissions` for live permissions after a UI change.
 
 Restart the selected client after setup, then check the connection at any time:
 
@@ -211,8 +213,9 @@ instructions:
 - Spot and Perpetual balances are separate. Use `transfer` explicitly when funds
   need to move between Spot and Perps.
 - Trading tools may be visible even when the credential is read-only. The
-  exchange enforces API scopes and returns `insufficient_scope` for unauthorized
-  trading calls.
+  exchange enforces API scopes. Scopes can change in the Yellow Pro UI without
+  reconnecting, so call `get_api_key_permissions` before trading or after a UI
+  permission change rather than relying on the scopes shown during onboarding.
 - For tests, prefer small `post_only` or `limit` orders that rest on the book,
   then verify open orders and cancel/cleanup.
 - Do not place market orders, close positions, or use bulk cancellation unless

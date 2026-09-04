@@ -9,6 +9,14 @@ const assetLike = z.string().optional().describe("case-insensitive substring mat
 
 export function registerAccountTools(server: McpServer, client: YellowProClient): void {
   server.registerTool(
+    "get_api_key_permissions",
+    {
+      description: "Live effective scopes of the authenticated API key. Call before trading and after Yellow Pro UI permission changes.",
+      inputSchema: {},
+    },
+    async () => jsonResult(await api.apiKeyPermissions(client)),
+  );
+  server.registerTool(
     "get_balance",
     {
       description: "Spot account balances or perpetual balance. Asset filters apply to Spot only.",
