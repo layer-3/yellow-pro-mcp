@@ -42,6 +42,7 @@ test("documented public data endpoints use their exact routes", async () => {
 test("documented account and fee endpoints preserve filters and authentication", async () => {
   const client = new RecordingClient();
 
+  await api.apiKeyPermissions(client);
   await api.spotAccounts(client);
   await api.spotAccount(client, { asset: "USDT", asset_like: "usd" });
   await api.feeTier(client);
@@ -49,6 +50,7 @@ test("documented account and fee endpoints preserve filters and authentication",
   await api.marketFeeRate(client, "perp", "BTCUSDT-PERP");
 
   assert.deepEqual(client.calls, [
+    { visibility: "private", method: "GET", path: "accounts/api-key/permissions", params: {} },
     { visibility: "private", method: "GET", path: "spot/accounts", params: {} },
     {
       visibility: "private",

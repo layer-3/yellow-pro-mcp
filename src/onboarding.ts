@@ -88,6 +88,8 @@ export async function connect(options: ConnectOptions): Promise<Record<string, u
     api_url: credential.apiUrl,
     account_type: credential.accountType,
     scopes: credential.scopes,
+    scope_source: "pairing_time",
+    permissions_tool: "get_api_key_permissions",
     credential_path: path,
     authentication: "valid",
     restart_required: true,
@@ -114,6 +116,8 @@ export async function connectionStatus(profile?: string, path?: string): Promise
     api_url: credential.apiUrl,
     account_type: credential.accountType,
     scopes: credential.scopes,
+    scope_source: "pairing_time",
+    permissions_tool: "get_api_key_permissions",
     credential_path: credentialPath,
     authentication: "valid",
   };

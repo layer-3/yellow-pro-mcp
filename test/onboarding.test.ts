@@ -47,6 +47,8 @@ test("connect stores credentials, verifies, and registers Claude without secrets
       setupRunner: (bin, args) => setupCalls.push({ bin, args }),
     });
     assert.equal(result.connected, true);
+    assert.equal(result.scope_source, "pairing_time");
+    assert.equal(result.permissions_tool, "get_api_key_permissions");
     assert.equal(JSON.stringify(result).includes("api-secret"), false);
     assert.equal(readCredentials(path)?.apiSecret, "api-secret");
     assert.deepEqual(setupCalls, [{

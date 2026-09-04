@@ -15,6 +15,8 @@ import {
 } from "./types.js";
 
 export const accountApi = {
+  apiKeyPermissions: (client: YellowProClient) => client.private("GET", "accounts/api-key/permissions"),
+
   balance: (client: YellowProClient, marketType: MarketType, query: SpotAccountQuery = {}) =>
     client.private(
       "GET",

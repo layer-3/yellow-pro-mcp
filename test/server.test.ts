@@ -12,7 +12,7 @@ const MARKET_TOOLS = [
   "get_funding_rate", "get_funding_rate_history", "get_networks", "get_transfer_assets",
 ];
 const ACCOUNT_TOOLS = [
-  "get_balance", "get_open_orders", "get_order_history", "get_my_trades", "get_positions",
+  "get_api_key_permissions", "get_balance", "get_open_orders", "get_order_history", "get_my_trades", "get_positions",
   "get_position_history", "get_perpetual_accounts", "get_fee_schedule", "get_funding_payments",
   "get_spot_accounts", "get_spot_account", "get_position_history_detail", "get_fee_tier",
   "get_market_fee_rate", "get_transaction_history",
